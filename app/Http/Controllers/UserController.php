@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\UserRequest;
+use App\Models\User;
+use App\Models\Circuit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
+
+class UserController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        // Obtener parámetros de la solicitud
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10);
+        $page = $request->input('page', 1);
+
+        // Validar que perPage sea uno de los valores permitidos
+        $allowedPerPage = [10, 20, 50, 100];
+        $perPage = in_array((int)$perPage, $allowedPerPage) ? (int)$perPage : 10;
+
+        $users = User::with(['circuit.zonal', 'zonificador', 'roles'])
+            ->when($search, function ($query) use ($search) {
+                return $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('dni', 'like', "%{$search}%")
+                    ->orWhere('cel', 'like', "%{$search}%")
+                    ->orWhereHas('circuit', function ($query) use ($search) {
+                        $query->where('name', 'like', "%{$search}%");
+                    });
+            })
+            ->orderBy('name')
+            ->paginate($perPage, ['*'], 'page', $page)
+            ->withQueryString();
+
+        // Cargar circuitos con su zonal relacionado
+        $circuits = Circuit::with('zonal:id,short_name')
+            ->where('active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'zonal_id']);
+        $zonificadores = User::whereHas('roles', function ($query) {
+            $query->where('name', 'zonificado');
+        })->orderBy('name')->get(['id', 'name', 'dni']);
+        $roles = Role::orderBy('name')->get(['id', 'name']);
+
+        return Inertia::render('User/Index', [
+            'users' => $users,
+            'circuits' => $circuits,
+            'zonificadores' => $zonificadores,
+            'roles' => $roles,
+            'filters' => [
+                'search' => $search,
+                'page' => $page,
+                'per_page' => $perPage,
+            ],
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(UserRequest $request)
+    {
+        $validated = $request->validated();
+        
+        // Encriptar la contraseña
+        $validated['password'] = Hash::make($validated['password']);
+        
+        // Crear el usuario
+        $user = User::create($validated);
+        
+        // Asignar rol
+        if (isset($validated['role'])) {
+            $user->assignRole($validated['role']);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Usuario creado correctamente']);
+        }
+
+        return to_route('users.index');
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UserRequest $request, User $user)
+    {
+        $validated = $request->validated();
+        
+        // Solo actualizar la contraseña si se proporciona
+        if (isset($validated['password']) && $validated['password']) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+        
+        $user->update($validated);
+        
+        // Actualizar roles
+        if (isset($validated['role'])) {
+            $user->syncRoles([$validated['role']]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Usuario actualizado correctamente']);
+        }
+
+        return to_route('users.index');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(User $user)
+    {
+        $user->delete();
+        return to_route('users.index');
+    }
+}

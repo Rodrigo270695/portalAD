@@ -11,9 +11,11 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        $this->call(RoleSeeder::class);
-        $this->call(ZonalSeeder::class);
-        $this->call(UserSeeder::class);
-
+        $this->call([
+            RoleSeeder::class,
+            ZonalSeeder::class,
+            CircuitSeeder::class,
+            UserSeeder::class,
+        ]);
     }
 }

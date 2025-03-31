@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CircuitController;
 use App\Http\Controllers\TackController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZonalController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -17,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('zonals', ZonalController::class);
     Route::resource('circuits', CircuitController::class);
+    Route::resource('users', UserController::class);
 
     // Rutas de Tacks
     Route::get('/circuits/{circuit}/tacks', [TackController::class, 'index'])->name('tacks.index');

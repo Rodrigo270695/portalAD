@@ -37,15 +37,21 @@ const mainNavItems: NavItem[] = [
         icon: Users,
         children: [
             {
-                title: 'Zonal',
-                href: '/zonals',
-                icon: Dot,
-            },
-            {
-                title: 'Circuito',
-                href: '/circuits',
+                title: 'Usuario',
+                href: '/users',
                 icon: Dot,
             }
+        ]
+    },
+    {
+        title: 'Ventas',
+        icon: ChartLine,
+        children: [
+            {
+                title: 'Venta',
+                href: '/sales',
+                icon: Dot,
+            },
         ]
     },
     {

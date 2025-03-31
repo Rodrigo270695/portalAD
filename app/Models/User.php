@@ -24,7 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'cel',
-        'zonal_id',
+        'zonificado_id',
+        'circuit_id',
     ];
 
     /**
@@ -58,5 +59,29 @@ class User extends Authenticatable
     public function username()
     {
         return 'dni';
+    }
+
+    /**
+     * Get the circuit that the user belongs to.
+     */
+    public function circuit()
+    {
+        return $this->belongsTo(Circuit::class);
+    }
+
+    /**
+     * Get the zonificador (supervisor) that the user belongs to.
+     */
+    public function zonificador()
+    {
+        return $this->belongsTo(User::class, 'zonificado_id');
+    }
+
+    /**
+     * Get the users that belong to this zonificador (supervisor).
+     */
+    public function zonificados()
+    {
+        return $this->hasMany(User::class, 'zonificado_id');
     }
 }

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Zonal;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Tack;
+use App\Models\User;
+use App\Models\Zonal;
 
 class Circuit extends Model
 {
@@ -23,19 +24,27 @@ class Circuit extends Model
     ];
 
     /**
-     * Get the zonal that owns the circuit.
-     */
-    public function zonal(): BelongsTo
-    {
-        return $this->belongsTo(Zonal::class);
-    }
-
-    /**
      * Get the tacks for the circuit.
      */
     public function tacks(): HasMany
     {
         return $this->hasMany(Tack::class);
+    }
+
+    /**
+     * Get the users for the circuit.
+     */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    /**
+     * Get the zonal that owns the circuit.
+     */
+    public function zonal(): BelongsTo
+    {
+        return $this->belongsTo(Zonal::class);
     }
 
     /**
