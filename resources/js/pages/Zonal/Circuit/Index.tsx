@@ -12,6 +12,7 @@ import CircuitModal from './CircuitModal';
 import { ModalSize } from '@/components/ui/crud-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Swal from 'sweetalert2';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Zonal {
     id: number;
@@ -22,7 +23,7 @@ interface Zonal {
 interface Circuit {
     id: number;
     name: string;
-    description: string | null;
+    address: string | null;
     active: boolean;
     zonal_id: number;
     zonal: Zonal;
@@ -157,6 +158,11 @@ export default function Index({ circuits, zonals, filters }: Props) {
         setSelectedCircuit(undefined);
     };
 
+    const truncateText = (text: string | null, maxLength: number = 70) => {
+        if (!text) return 'Sin dirección';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Circuitos" />
@@ -224,7 +230,7 @@ export default function Index({ circuits, zonals, filters }: Props) {
                                 <CardContent>
                                     <div className="space-y-2">
                                         <p className="text-sm text-muted-foreground">
-                                            {circuit.description || 'Sin descripción'}
+                                            {truncateText(circuit.address)}
                                         </p>
                                         <p className="text-sm">
                                             <span className="font-medium">Zonal:</span>{' '}
@@ -233,27 +239,48 @@ export default function Index({ circuits, zonals, filters }: Props) {
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-end gap-2">
-                                    <Button
-                                        variant="yellow"
-                                        size="sm"
-                                        onClick={() => openEditModal(circuit)}
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => router.get(`/circuits/${circuit.id}/tacks`)}
-                                    >
-                                        <MapPin className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => handleDelete(circuit.id, circuit.name)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="yellow"
+                                                size="sm"
+                                                onClick={() => openEditModal(circuit)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Editar circuito</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="cian"
+                                                size="sm"
+                                                onClick={() => router.get(`/circuits/${circuit.id}/tacks`)}
+                                            >
+                                                <MapPin className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Ver Rutas</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDelete(circuit.id, circuit.name)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Eliminar circuito</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </CardFooter>
                             </Card>
                         ))
@@ -266,7 +293,7 @@ export default function Index({ circuits, zonals, filters }: Props) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Nombre</TableHead>
-                                <TableHead>Descripción</TableHead>
+                                <TableHead>Dirección</TableHead>
                                 <TableHead>Zonal</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead className="w-[100px] text-right">Acciones</TableHead>
@@ -286,7 +313,7 @@ export default function Index({ circuits, zonals, filters }: Props) {
                                 circuits.data.map((circuit) => (
                                     <TableRow key={circuit.id}>
                                         <TableCell>{circuit.name}</TableCell>
-                                        <TableCell>{circuit.description || 'Sin descripción'}</TableCell>
+                                        <TableCell>{truncateText(circuit.address)}</TableCell>
                                         <TableCell>
                                             {circuit.zonal.name} ({circuit.zonal.short_name})
                                         </TableCell>
@@ -303,27 +330,48 @@ export default function Index({ circuits, zonals, filters }: Props) {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="ghostYellow"
-                                                    size="icon"
-                                                    onClick={() => openEditModal(circuit)}
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => router.get(`/circuits/${circuit.id}/tacks`)}
-                                                >
-                                                    <MapPin className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghostRed"
-                                                    size="icon"
-                                                    onClick={() => handleDelete(circuit.id, circuit.name)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghostYellow"
+                                                            size="icon"
+                                                            onClick={() => openEditModal(circuit)}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Editar circuito</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => router.get(`/circuits/${circuit.id}/tacks`)}
+                                                        >
+                                                            <MapPin className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Ver Rutas</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghostRed"
+                                                            size="icon"
+                                                            onClick={() => handleDelete(circuit.id, circuit.name)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Eliminar circuito</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </TableRow>

@@ -46,6 +46,26 @@ export default function CrudModal({
         onClose();
     };
 
+    // Preparar propiedades para DialogContent
+    const dialogContentProps: React.ComponentPropsWithoutRef<typeof DialogContent> = {
+        className: `${sizeClasses[size]} ${size === 'full' ? 'flex flex-col' : ''}`,
+        onPointerDownOutside: (e) => {
+            if (preventCloseOnClickOutside) {
+                e.preventDefault();
+            }
+        },
+        onEscapeKeyDown: (e) => {
+            if (preventCloseOnClickOutside) {
+                e.preventDefault();
+            }
+        }
+    };
+
+    // Solo agregar aria-describedby si hay una descripción
+    if (description) {
+        dialogContentProps['aria-describedby'] = 'modal-description';
+    }
+
     return (
         <Dialog 
             open={isOpen} 
@@ -55,20 +75,7 @@ export default function CrudModal({
                 }
             }}
         >
-            <DialogContent 
-                className={`${sizeClasses[size]} ${size === 'full' ? 'flex flex-col' : ''}`}
-                aria-describedby={description ? 'modal-description' : undefined}
-                onPointerDownOutside={(e) => {
-                    if (preventCloseOnClickOutside) {
-                        e.preventDefault();
-                    }
-                }}
-                onEscapeKeyDown={(e) => {
-                    if (preventCloseOnClickOutside) {
-                        e.preventDefault();
-                    }
-                }}
-            >
+            <DialogContent {...dialogContentProps}>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     {description && (

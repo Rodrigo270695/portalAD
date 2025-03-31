@@ -18,7 +18,7 @@ interface Zonal {
 interface Circuit {
     id: number;
     name: string;
-    description: string | null;
+    address: string | null;
     active: boolean;
     zonal_id: number;
     zonal?: Zonal;
@@ -37,12 +37,12 @@ export default function CircuitModal({ isOpen, onClose, circuit, size = 'md', zo
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<{
         name: string;
-        description: string;
+        address: string;
         active: boolean;
         zonal_id: number;
     }>({
         name: '',
-        description: '',
+        address: '',
         active: true,
         zonal_id: zonals[0]?.id || 0,
     });
@@ -51,7 +51,7 @@ export default function CircuitModal({ isOpen, onClose, circuit, size = 'md', zo
         if (isOpen) {
             setData({
                 name: circuit?.name || '',
-                description: circuit?.description || '',
+                address: circuit?.address || '',
                 active: circuit?.active ?? true,
                 zonal_id: circuit?.zonal_id || zonals[0]?.id || 0,
             });
@@ -66,8 +66,8 @@ export default function CircuitModal({ isOpen, onClose, circuit, size = 'md', zo
         setData('name', value);
     };
 
-    const handleSubmit = (e: FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = (e?: FormEvent) => {
+        if (e) e.preventDefault();
 
         const submitForm = isEditing ? put : post;
         const url = isEditing ? `/circuits/${circuit.id}` : '/circuits';
@@ -106,10 +106,12 @@ export default function CircuitModal({ isOpen, onClose, circuit, size = 'md', zo
             <form id="circuitForm" className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="zonal_id" className={classNames({ 'text-destructive': errors.zonal_id })} required>
-                                Zonal
-                            </Label>
+                        <div>
+                            <div className="mb-1">
+                                <Label htmlFor="zonal_id" className={classNames({ 'text-destructive': errors.zonal_id })} required>
+                                    Zonal
+                                </Label>
+                            </div>
                             <Select
                                 value={data.zonal_id.toString()}
                                 onValueChange={(value) => setData('zonal_id', parseInt(value))}
@@ -126,14 +128,16 @@ export default function CircuitModal({ isOpen, onClose, circuit, size = 'md', zo
                                 </SelectContent>
                             </Select>
                             {errors.zonal_id && (
-                                <p className="text-sm text-destructive">{errors.zonal_id}</p>
+                                <p className="text-sm text-destructive mt-1">{errors.zonal_id}</p>
                             )}
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="name" className={classNames({ 'text-destructive': errors.name })} required>
-                                Nombre
-                            </Label>
+                        <div>
+                            <div className="mb-1">
+                                <Label htmlFor="name" className={classNames({ 'text-destructive': errors.name })} required>
+                                    Nombre
+                                </Label>
+                            </div>
                             <Input
                                 id="name"
                                 value={data.name}
@@ -141,25 +145,27 @@ export default function CircuitModal({ isOpen, onClose, circuit, size = 'md', zo
                                 className={classNames({ 'border-destructive': errors.name })}
                             />
                             {errors.name && (
-                                <p className="text-sm text-destructive">{errors.name}</p>
+                                <p className="text-sm text-destructive mt-1">{errors.name}</p>
                             )}
                         </div>
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="description" className={classNames({ 'text-destructive': errors.description })}>
-                            Descripción
-                        </Label>
+                    <div>
+                        <div className="mb-1">
+                            <Label htmlFor="description" className={classNames({ 'text-destructive': errors.description })}>
+                                Dirección
+                            </Label>
+                        </div>
                         <Textarea
-                            id="description"
-                            value={data.description}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('description', e.target.value)}
-                            className={classNames({ 'border-destructive': errors.description })}
-                            placeholder="Ingrese una descripción del circuito..."
+                            id="address"
+                            value={data.address}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('address', e.target.value)}
+                            className={classNames({ 'border-destructive': errors.address })}
+                            placeholder="Ingrese una dirección del circuito..."
                             rows={4}
                         />
-                        {errors.description && (
-                            <p className="text-sm text-destructive">{errors.description}</p>
+                        {errors.address && (
+                            <p className="text-sm text-destructive mt-1">{errors.address}</p>
                         )}
                     </div>
 

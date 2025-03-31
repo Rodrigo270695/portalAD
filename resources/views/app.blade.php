@@ -4,6 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        {{-- Favicon --}}
+        <link rel="icon" href="/logo.svg" type="image/svg+xml">
+        <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
             (function() {

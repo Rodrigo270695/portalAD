@@ -27,7 +27,7 @@ class CircuitRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'min:3', 'max:50', $uniqueRule],
-            'description' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:255'],
             'active' => ['required', 'boolean'],
             'zonal_id' => ['required', 'exists:zonals,id'],
         ];
@@ -43,7 +43,7 @@ class CircuitRequest extends FormRequest
             'name.min' => 'El nombre debe tener al menos :min caracteres',
             'name.max' => 'El nombre no puede tener más de :max caracteres',
             'name.unique' => 'Ya existe un circuito con este nombre',
-            'description.max' => 'La descripción no puede tener más de :max caracteres',
+            'address.max' => 'La dirección no puede tener más de :max caracteres',
             'active.required' => 'El estado es requerido',
             'active.boolean' => 'El estado debe ser verdadero o falso',
             'zonal_id.required' => 'La zonal es requerida',

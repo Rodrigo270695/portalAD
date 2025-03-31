@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Building2, LayoutGrid, Map, Network, Users2, Dot } from 'lucide-react';
+import { LayoutGrid, Map, Dot, ChartLine, DollarSign, Megaphone, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 interface AppSidebarProps {
@@ -31,6 +31,37 @@ const mainNavItems: NavItem[] = [
                 icon: Dot,
             }
         ]
+    },
+    {
+        title: 'Usuarios',
+        icon: Users,
+        children: [
+            {
+                title: 'Zonal',
+                href: '/zonals',
+                icon: Dot,
+            },
+            {
+                title: 'Circuito',
+                href: '/circuits',
+                icon: Dot,
+            }
+        ]
+    },
+    {
+        title: 'Ventas PDV',
+        href: '/sales-pdv',
+        icon: ChartLine,
+    },
+    {
+        title: 'Abonos',
+        href: '/payments',
+        icon: DollarSign,
+    },
+    {
+        title: 'Campañas',
+        href: '/campaigns',
+        icon: Megaphone,
     }
 ];
 

@@ -12,6 +12,7 @@ import ZonalModal from './ZonalModal';
 import { ModalSize } from '@/components/ui/crud-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Swal from 'sweetalert2';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Zonal {
     id: number;
@@ -276,20 +277,34 @@ export default function Index({ zonals, filters }: Props) {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="ghostYellow"
-                                                    size="icon"
-                                                    onClick={() => openEditModal(zonal)}
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghostRed"
-                                                    size="icon"
-                                                    onClick={() => handleDelete(zonal.id, zonal.name)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghostYellow"
+                                                            size="icon"
+                                                            onClick={() => openEditModal(zonal)}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Editar zonal</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghostRed"
+                                                            size="icon"
+                                                            onClick={() => handleDelete(zonal.id, zonal.name)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Eliminar zonal</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </TableRow>

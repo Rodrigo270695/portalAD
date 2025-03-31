@@ -12,6 +12,7 @@ import TackModal from './TackModal';
 import { ModalSize } from '@/components/ui/crud-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Swal from 'sweetalert2';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Circuit {
     id: number;
@@ -233,20 +234,34 @@ export default function Index({ tacks, circuit, filters }: Props) {
                                     </span>
                                 </CardHeader>
                                 <CardFooter className="flex justify-end gap-2">
-                                    <Button
-                                        variant="yellow"
-                                        size="sm"
-                                        onClick={() => openEditModal(tack)}
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => handleDelete(tack.id, tack.name)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="yellow"
+                                                size="sm"
+                                                onClick={() => openEditModal(tack)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Editar ruta</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDelete(tack.id, tack.name)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Eliminar ruta</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </CardFooter>
                             </Card>
                         ))
@@ -290,20 +305,34 @@ export default function Index({ tacks, circuit, filters }: Props) {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="ghostYellow"
-                                                    size="icon"
-                                                    onClick={() => openEditModal(tack)}
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghostRed"
-                                                    size="icon"
-                                                    onClick={() => handleDelete(tack.id, tack.name)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghostYellow"
+                                                            size="icon"
+                                                            onClick={() => openEditModal(tack)}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Editar ruta</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghostRed"
+                                                            size="icon"
+                                                            onClick={() => handleDelete(tack.id, tack.name)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Eliminar ruta</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </TableRow>

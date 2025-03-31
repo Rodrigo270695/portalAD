@@ -13,7 +13,7 @@ class Circuit extends Model
 {
     protected $fillable = [
         'name',
-        'description',
+        'address',
         'active',
         'zonal_id',
     ];
@@ -45,7 +45,7 @@ class Circuit extends Model
     {
         if ($search) {
             $query->where('name', 'like', "%{$search}%")
-                ->orWhere('description', 'like', "%{$search}%")
+                ->orWhere('address', 'like', "%{$search}%")
                 ->orWhereHas('zonal', function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
                         ->orWhere('short_name', 'like', "%{$search}%");
