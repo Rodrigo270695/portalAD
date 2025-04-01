@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CircuitController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TackController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZonalController;
@@ -11,10 +12,14 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    //Route::get('dashboard', function () {
+    //    return Inertia::render('dashboard');
+    //})->name('dashboard');
 
     Route::resource('zonals', ZonalController::class);
     Route::resource('circuits', CircuitController::class);

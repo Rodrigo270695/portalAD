@@ -1,8 +1,24 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Phone, MessageCircle, Calendar, User, FileText, TrendingUp, DollarSign, PieChart, AlertCircle, ChevronDown, ChevronRight, ShoppingCart, Info, Plus, ChevronUp } from 'lucide-react';
+import { FileText, TrendingUp, DollarSign, PieChart, AlertCircle, ChevronDown, ChevronRight, ShoppingCart, Info, Plus, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import CardDashboard from '@/components/CardDashboard';
+import PDVInfo from '@/components/PDVInfo';
+
+interface DashboardProps {
+    userData: {
+        name: string;
+        dni: string;
+        vendorName: string;
+        vendorDNI: string;
+        vendorPhone: string;
+        channel: string;
+        group: string;
+        updateDate: string;
+        pdvLevel: string;
+    };
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -11,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard() {
+export default function Dashboard({ userData }: DashboardProps) {
     const [showDailyDetails, setShowDailyDetails] = useState(false);
 
     return (
@@ -20,72 +36,20 @@ export default function Dashboard() {
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Primera fila - 3 tarjetas principales */}
                 <div className="grid auto-rows-min gap-4 grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-sidebar-background shadow-sm">
-                        <div className="bg-blue-500 p-3 text-white font-medium text-lg">
-                            Información del PDV
-                        </div>
-                        <div className="p-4 flex flex-col space-y-3">
-                            <div className="flex justify-center mb-2">
-                                <div className="size-20 rounded-full border-4 border-blue-300 flex items-center justify-center bg-blue-100">
-                                    <User className="size-10 text-blue-500" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">Nombre PDV:</span>
-                                    <span className="text-gray-800 dark:text-white">ROGER PAUCCA PARIONA</span>
-                                </div>
-
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">DNI Responsable:</span>
-                                    <span className="text-gray-800 dark:text-white">46567032</span>
-                                </div>
-
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">Vendedor:</span>
-                                    <span className="text-gray-800 dark:text-white">AYA TANIA PEREZ FERNANDEZ</span>
-                                </div>
-
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">Celular Vendedor:</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-800 dark:text-white">+51915365691</span>
-                                        <a href="tel:+51915365691" className="text-blue-500 bg-blue-100 p-1 rounded-full" target="_blank">
-                                            <Phone size={16} />
-                                        </a>
-                                        <a href="https://wa.me/51915365691" className="text-green-500 bg-green-100 p-1 rounded-full" target="_blank">
-                                            <MessageCircle size={16} />
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">Canal:</span>
-                                    <span className="text-gray-800 dark:text-white">PDV</span>
-                                </div>
-
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">Grupo:</span>
-                                    <span className="text-gray-800 dark:text-white">Grupo 2</span>
-                                </div>
-
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">Fecha de Actualización:</span>
-                                    <div className="flex items-center gap-1">
-                                        <Calendar size={16} className="text-gray-500" />
-                                        <span className="text-gray-800 dark:text-white">2025-03-31</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col">
-                                    <span className="font-medium text-gray-600 dark:text-gray-300">Nivel PDV:</span>
-                                    <span className="text-gray-800 dark:text-white">PDV REGULAR</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-sidebar-background shadow-sm">
+                    <CardDashboard title="Información del PDV">
+                        <PDVInfo 
+                            name={userData.name}
+                            dni={userData.dni}
+                            vendorName={userData.vendorName}
+                            vendorDNI={userData.vendorDNI}
+                            vendorPhone={userData.vendorPhone}
+                            channel={userData.channel}
+                            group={userData.group}
+                            updateDate={userData.updateDate}
+                            pdvLevel={userData.pdvLevel}
+                        />
+                    </CardDashboard>
+                    <CardDashboard title="Avance de Ventas">
                         <div className="bg-emerald-500 p-3 text-white font-medium text-lg">
                             Avance de Ventas
                         </div>
@@ -129,8 +93,8 @@ export default function Dashboard() {
                                 <span className="text-amber-800">Faltan 1 recargas para llegar al 50% de ratio.</span>
                             </div>
                         </div>
-                    </div>
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative overflow-hidden rounded-xl border bg-white dark:bg-sidebar-background shadow-sm md:col-span-2 lg:col-span-1">
+                    </CardDashboard>
+                    <CardDashboard title="Bonos PDV con ratio de 49%">
                         <div className="bg-amber-400 p-3 text-gray-800 font-medium text-lg flex justify-between items-center">
                             <span>Bonos PDV con ratio de</span>
                             <span className="bg-white px-2 py-1 rounded font-bold">49%</span>
@@ -226,7 +190,7 @@ export default function Dashboard() {
                                 <span className="font-bold text-blue-600">S/. 41</span>
                             </div>
                         </div>
-                    </div>
+                    </CardDashboard>
                 </div>
 
                 {/* Segunda fila - Avance Diario (tabla completa) */}
