@@ -84,4 +84,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(User::class, 'zonificado_id');
     }
+
+    /**
+     * Get the sellers that belong to this user.
+     */
+    public function sellers()
+    {
+        return $this->hasMany(Seller::class);
+    }
 }

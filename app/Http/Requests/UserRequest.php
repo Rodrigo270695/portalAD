@@ -23,7 +23,7 @@ class UserRequest extends FormRequest
     {
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'email' => ['nullable','string', 'email', 'max:255'],
             'dni' => ['required', 'string', 'size:8'],
             'cel' => ['required', 'string', 'size:9'],
             'circuit_id' => ['required', 'exists:circuits,id'],
@@ -34,7 +34,7 @@ class UserRequest extends FormRequest
         // Si es una creación de usuario, la contraseña es requerida
         if ($this->isMethod('post')) {
             $rules['password'] = ['required', 'confirmed', Password::defaults()];
-            $rules['email'] = ['required', 'string', 'email', 'max:255', 'unique:users'];
+            $rules['email'] = ['nullable', 'string', 'email', 'max:255', 'unique:users'];
             $rules['dni'] = ['required', 'string', 'size:8', 'unique:users'];
             $rules['cel'] = ['required', 'string', 'size:9', 'unique:users'];
         }
@@ -42,7 +42,7 @@ class UserRequest extends FormRequest
         else if ($this->isMethod('put') || $this->isMethod('patch')) {
             $userId = $this->route('user')->id;
             $rules['password'] = ['nullable', 'confirmed', Password::defaults()];
-            $rules['email'] = ['required', 'string', 'email', 'max:255', "unique:users,email,{$userId}"];
+            $rules['email'] = ['nullable', 'string', 'email', 'max:255', "unique:users,email,{$userId}"];
             $rules['dni'] = ['required', 'string', 'size:8', "unique:users,dni,{$userId}"];
             $rules['cel'] = ['required', 'string', 'size:9', "unique:users,cel,{$userId}"];
         }

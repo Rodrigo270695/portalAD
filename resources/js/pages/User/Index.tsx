@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Edit, Plus, Search, Trash2, Phone } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, Users, Phone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ModalSize } from '@/components/ui/crud-modal';
 import UserModal from './UserModal';
@@ -264,7 +264,7 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
                                             <span className="font-medium">Circuito:</span>{' '}
                                             {user.circuit && user.circuit.zonal ? (
                                                 <span>
-                                                    <strong>{user.circuit.zonal.short_name}</strong> {user.circuit.name}
+                                                    {user.circuit.name}
                                                 </span>
                                             ) : (
                                                 user.circuit?.name || 'No asignado'
@@ -277,6 +277,22 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-end gap-2">
+                                    {user.roles.some(role => role.name === 'pdv') && (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    variant="cian"
+                                                    size="sm"
+                                                    onClick={() => router.get(`/users/${user.id}/sellers`)}
+                                                >
+                                                    <Users className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Ver vendedores</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    )}
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button
@@ -351,7 +367,7 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
                                         <TableCell>
                                             {user.circuit && user.circuit.zonal ? (
                                                 <span>
-                                                    <strong>{user.circuit.zonal.short_name}</strong> {user.circuit.name}
+                                                    {user.circuit.name}
                                                 </span>
                                             ) : (
                                                 user.circuit?.name || 'No asignado'
@@ -371,6 +387,22 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
+                                                {user.roles.some(role => role.name === 'pdv') && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghostCian"
+                                                                size="icon"
+                                                                onClick={() => router.get(`/users/${user.id}/sellers`)}
+                                                            >
+                                                                <Users className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>Ver vendedores</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button
