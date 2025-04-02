@@ -20,7 +20,7 @@ export function AppShell({ children, variant = 'header' }: AppShellProps) {
 
     if (variant === 'header') {
         return (
-            <div className="flex min-h-screen w-full flex-col">
+            <div className="flex min-h-[100dvh] w-full flex-col overscroll-none">
                 {children}
                 <Toaster />
             </div>
@@ -29,8 +29,10 @@ export function AppShell({ children, variant = 'header' }: AppShellProps) {
 
     return (
         <SidebarProvider defaultOpen={isOpen} open={isOpen} onOpenChange={handleSidebarChange}>
-            {children}
-            <Toaster />
+            <div className="flex min-h-[100dvh] w-full overscroll-none">
+                {children}
+                <Toaster />
+            </div>
         </SidebarProvider>
     );
 }

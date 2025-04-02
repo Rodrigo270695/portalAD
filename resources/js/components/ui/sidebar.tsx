@@ -8,13 +8,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
     Tooltip,
@@ -189,7 +183,7 @@ function Sidebar({
                     data-sidebar="sidebar"
                     data-slot="sidebar"
                     data-mobile="true"
-                    className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+                    className="bg-sidebar text-sidebar-foreground flex h-[100dvh] w-(--sidebar-width) flex-col p-0 [&>button]:hidden overflow-y-auto"
                     style={
                         {
                             "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -197,7 +191,9 @@ function Sidebar({
                     }
                     side={side}
                 >
-                    <div className="flex h-full w-full flex-col">{children}</div>
+                    <div className="flex h-full flex-col">
+                        {children}
+                    </div>
                 </SheetContent>
             </Sheet>
         )
@@ -339,11 +335,17 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
+    const { isMobile } = useSidebar()
+    
     return (
         <div
             data-slot="sidebar-footer"
             data-sidebar="footer"
-            className={cn("flex flex-col gap-2 p-2", className)}
+            className={cn(
+                "mt-auto flex flex-col gap-2 p-2",
+                isMobile ? "bg-sidebar border-t border-sidebar-border" : "",
+                className
+            )}
             {...props}
         />
     )

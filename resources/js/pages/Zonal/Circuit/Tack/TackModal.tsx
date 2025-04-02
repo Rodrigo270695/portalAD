@@ -1,54 +1,56 @@
-import CrudModal, { ModalSize } from '@/components/ui/crud-modal';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from '@/hooks/use-toast';
 import { useForm } from '@inertiajs/react';
-import { FormEvent, useEffect } from 'react';
-import classNames from 'classnames';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
-interface Circuit {
-    id: number;
-    name: string;
-}
+import { Target } from 'lucide-react';
+import classNames from 'classnames';
+import { Checkbox } from '@/components/ui/checkbox';
+import CrudModal from '@/components/ui/crud-modal';
+import { FormEvent, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 interface Tack {
     id: number;
     name: string;
     active: boolean;
     circuit_id: number;
-    circuit?: Circuit;
 }
 
 interface TackModalProps {
     isOpen: boolean;
     onClose: () => void;
-    tack?: Tack | null;
-    size?: ModalSize;
+    tack?: Tack;
+    size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
+    circuit_id: number;
+}
+
+interface TackFormData {
+    [key: string]: string | number | boolean;
+    id: number | string;
+    name: string;
+    active: boolean;
     circuit_id: number;
 }
 
 export default function TackModal({ isOpen, onClose, tack, size = 'md', circuit_id }: TackModalProps) {
     const isEditing = !!tack;
 
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<{
-        name: string;
-        active: boolean;
-        circuit_id: number;
-    }>({
-        name: '',
-        active: true,
+    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<TackFormData>({
+        id: tack?.id,
+        name: tack?.name || '',
+        active: tack?.active ?? true,
         circuit_id: circuit_id,
     });
 
     useEffect(() => {
         if (isOpen) {
             setData({
+                id: tack?.id,
                 name: tack?.name || '',
                 active: tack?.active ?? true,
                 circuit_id: circuit_id,
             });
+            clearErrors();
         } else {
             reset();
             clearErrors();
@@ -56,36 +58,33 @@ export default function TackModal({ isOpen, onClose, tack, size = 'md', circuit_
     }, [isOpen, tack, setData, reset, clearErrors, circuit_id]);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.toUpperCase();
+        const value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
         setData('name', value);
     };
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-
-        if (isEditing && tack) {
-            put(`/tacks/${tack.id}`, {
+        if (isEditing) {
+            put(route('tacks.update', tack.id), {
                 onSuccess: () => {
                     toast.success({
-                        title: "Ruta actualizada",
-                        description: `La ruta "${data.name}" ha sido actualizada correctamente.`
+                        title: "Tack actualizado",
+                        description: `El tack "${data.name}" ha sido actualizado correctamente.`
                     });
-                    reset();
-                    clearErrors();
                     onClose();
-                }
+                    reset();
+                },
             });
         } else {
-            post('/tacks', {
+            post(route('tacks.store'), {
                 onSuccess: () => {
                     toast.success({
-                        title: "Ruta creada",
-                        description: `La ruta "${data.name}" ha sido creada correctamente.`
+                        title: "Tack creado",
+                        description: `El tack "${data.name}" ha sido creado correctamente.`
                     });
-                    reset();
-                    clearErrors();
                     onClose();
-                }
+                    reset();
+                },
             });
         }
     };
@@ -100,36 +99,46 @@ export default function TackModal({ isOpen, onClose, tack, size = 'md', circuit_
         <CrudModal
             isOpen={isOpen}
             onClose={handleClose}
-            title={isEditing ? 'Editar Ruta' : 'Nueva Ruta'}
-            description={isEditing ? 'Actualiza los datos de la ruta.' : 'Ingresa los datos de la nueva ruta.'}
+            title={isEditing ? 'Editar Tack' : 'Crear Tack'}
+            description={isEditing ? 'Actualiza los datos del tack.' : 'Ingresa los datos del nuevo tack.'}
             size={size}
             preventCloseOnClickOutside={true}
         >
             <form id="tackForm" className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name" className={classNames({ 'text-destructive': errors.name })} required>
-                            Nombre
-                        </Label>
-                        <Input
-                            id="name"
-                            value={data.name}
-                            onChange={handleNameChange}
-                            className={classNames({ 'border-destructive': errors.name })}
-                            maxLength={20}
-                        />
-                        {errors.name && (
-                            <p className="text-sm text-destructive">{errors.name}</p>
-                        )}
-                    </div>
+                    <div className="grid gap-6">
+                        <div>
+                            <div className="mb-1">
+                                <Label htmlFor="name" className={classNames({ 'text-destructive': errors.name })} required>
+                                    Nombre
+                                </Label>
+                            </div>
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
+                                    <Target size={18} />
+                                </div>
+                                <Input
+                                    id="name"
+                                    value={data.name}
+                                    onChange={handleNameChange}
+                                    className={classNames('pl-10', { 'border-destructive': errors.name })}
+                                    placeholder="Nombre del tack"
+                                    maxLength={20}
+                                />
+                            </div>
+                            {errors.name && (
+                                <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                            )}
+                        </div>
 
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="active"
-                            checked={data.active}
-                            onCheckedChange={(checked) => setData('active', checked as boolean)}
-                        />
-                        <Label htmlFor="active">Activo</Label>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="active"
+                                checked={data.active}
+                                onCheckedChange={(checked) => setData('active', checked as boolean)}
+                            />
+                            <Label htmlFor="active">Activo</Label>
+                        </div>
                     </div>
                 </div>
 

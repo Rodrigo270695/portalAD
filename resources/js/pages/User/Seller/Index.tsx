@@ -178,7 +178,7 @@ export default function Index({ sellers, pdv, filters }: Props) {
                         </Button>
                         <Button onClick={() => openCreateModal()}>
                             <Plus className="mr-2 h-4 w-4" />
-                            Nuevo Vendedor
+                            Nuevo Vend.
                         </Button>
                     </div>
                 </div>
@@ -186,13 +186,13 @@ export default function Index({ sellers, pdv, filters }: Props) {
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
                         <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                             <Input
                                 placeholder="Buscar vendedores..."
                                 value={search}
                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-                                className="pl-8"
+                                className="pl-10"
                             />
-                            <Search className="w-4 h-4 absolute left-2.5 top-3 text-muted-foreground" />
                         </div>
                     </div>
                     <div className="w-full sm:w-48">
@@ -291,7 +291,7 @@ export default function Index({ sellers, pdv, filters }: Props) {
                                     <TableRow>
                                         <TableCell
                                             colSpan={4}
-                                            className="text-center h-32"
+                                            className="text-center py-6"
                                         >
                                             No se encontraron vendedores
                                         </TableCell>

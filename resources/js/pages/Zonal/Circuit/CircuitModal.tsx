@@ -8,6 +8,7 @@ import { useForm } from '@inertiajs/react';
 import { FormEvent, useEffect } from 'react';
 import classNames from 'classnames';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Route, MapPin, Building2 } from 'lucide-react';
 
 interface Zonal {
     id: number;
@@ -105,68 +106,86 @@ export default function CircuitModal({ isOpen, onClose, circuit, size = 'md', zo
         >
             <form id="circuitForm" className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="col-span-1">
                             <div className="mb-1">
                                 <Label htmlFor="zonal_id" className={classNames({ 'text-destructive': errors.zonal_id })} required>
                                     Zonal
                                 </Label>
                             </div>
-                            <Select
-                                value={data.zonal_id.toString()}
-                                onValueChange={(value) => setData('zonal_id', parseInt(value))}
-                            >
-                                <SelectTrigger className={classNames({ 'border-destructive': errors.zonal_id })}>
-                                    <SelectValue placeholder="Seleccione un Zonal" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {zonals.map((zonal) => (
-                                        <SelectItem key={zonal.id} value={zonal.id.toString()}>
-                                            {zonal.name} ({zonal.short_name})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600 z-10">
+                                    <Building2 size={18} />
+                                </div>
+                                <Select
+                                    value={data.zonal_id.toString()}
+                                    onValueChange={(value) => setData('zonal_id', parseInt(value))}
+                                >
+                                    <SelectTrigger className={classNames('pl-10', { 'border-destructive': errors.zonal_id })}>
+                                        <SelectValue placeholder="Seleccione un Zonal" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {zonals.map((zonal) => (
+                                            <SelectItem key={zonal.id} value={zonal.id.toString()}>
+                                                {zonal.name} ({zonal.short_name})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             {errors.zonal_id && (
                                 <p className="text-sm text-destructive mt-1">{errors.zonal_id}</p>
                             )}
                         </div>
 
-                        <div>
+                        <div className="col-span-1">
                             <div className="mb-1">
                                 <Label htmlFor="name" className={classNames({ 'text-destructive': errors.name })} required>
                                     Nombre
                                 </Label>
                             </div>
-                            <Input
-                                id="name"
-                                value={data.name}
-                                onChange={handleNameChange}
-                                className={classNames({ 'border-destructive': errors.name })}
-                            />
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
+                                    <Route size={18} />
+                                </div>
+                                <Input
+                                    id="name"
+                                    value={data.name}
+                                    onChange={handleNameChange}
+                                    className={classNames('pl-10', { 'border-destructive': errors.name })}
+                                    placeholder="Nombre del circuito"
+                                />
+                            </div>
                             {errors.name && (
                                 <p className="text-sm text-destructive mt-1">{errors.name}</p>
                             )}
                         </div>
                     </div>
 
-                    <div>
-                        <div className="mb-1">
-                            <Label htmlFor="description" className={classNames({ 'text-destructive': errors.description })}>
-                                Dirección
-                            </Label>
+                    <div className="grid gap-6">
+                        <div className="col-span-1">
+                            <div className="mb-1">
+                                <Label htmlFor="address" className={classNames({ 'text-destructive': errors.address })}>
+                                    Dirección
+                                </Label>
+                            </div>
+                            <div className="relative">
+                                <div className="absolute left-3 top-2.5 text-blue-600">
+                                    <MapPin size={18} />
+                                </div>
+                                <Textarea
+                                    id="address"
+                                    value={data.address}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('address', e.target.value)}
+                                    className={classNames('pl-10', { 'border-destructive': errors.address })}
+                                    placeholder="Dirección del circuito"
+                                    rows={4}
+                                />
+                            </div>
+                            {errors.address && (
+                                <p className="text-sm text-destructive mt-1">{errors.address}</p>
+                            )}
                         </div>
-                        <Textarea
-                            id="address"
-                            value={data.address}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('address', e.target.value)}
-                            className={classNames({ 'border-destructive': errors.address })}
-                            placeholder="Ingrese una dirección del circuito..."
-                            rows={4}
-                        />
-                        {errors.address && (
-                            <p className="text-sm text-destructive mt-1">{errors.address}</p>
-                        )}
                     </div>
 
                     <div className="flex items-center space-x-2">

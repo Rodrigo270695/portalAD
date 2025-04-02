@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { useForm } from '@inertiajs/react';
 import { FormEvent, useEffect } from 'react';
 import classNames from 'classnames';
+import { Building2, Hash } from 'lucide-react';
 
 interface Zonal {
     id: number;
@@ -100,55 +101,61 @@ export default function ZonalModal({ isOpen, onClose, zonal, size = 'md' }: Zona
             preventCloseOnClickOutside={true}
         >
             <form id="zonalForm" className="space-y-4" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                    <Label htmlFor="name" required>Nombre</Label>
-                    <Input
-                        id="name"
-                        type="text"
-                        value={data.name}
-                        onChange={handleNameChange}
-                        className={classNames(
-                            "w-full",
-                            errors.name && "border-destructive focus-visible:ring-destructive"
+                <div className="grid gap-6">
+                    <div>
+                        <div className="mb-1">
+                            <Label htmlFor="name" className={classNames({ 'text-destructive': errors.name })} required>
+                                Nombre
+                            </Label>
+                        </div>
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
+                                <Building2 size={18} />
+                            </div>
+                            <Input
+                                id="name"
+                                value={data.name}
+                                onChange={handleNameChange}
+                                className={classNames('pl-10', { 'border-destructive': errors.name })}
+                                placeholder="Nombre de la zonal"
+                            />
+                        </div>
+                        {errors.name && (
+                            <p className="text-sm text-destructive mt-1">{errors.name}</p>
                         )}
-                        aria-invalid={errors.name ? 'true' : 'false'}
-                        aria-errormessage={errors.name ? 'name-error' : undefined}
-                    />
-                    {errors.name && (
-                        <p className="text-sm font-medium text-destructive" id="name-error" role="alert">
-                            {errors.name}
-                        </p>
-                    )}
-                </div>
+                    </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="short_name" required>Nombre corto</Label>
-                    <Input
-                        id="short_name"
-                        type="text"
-                        value={data.short_name}
-                        onChange={handleShortNameChange}
-                        className={classNames(
-                            "w-full",
-                            errors.short_name && "border-destructive focus-visible:ring-destructive"
+                    <div>
+                        <div className="mb-1">
+                            <Label htmlFor="short_name" className={classNames({ 'text-destructive': errors.short_name })} required>
+                                Nombre corto
+                            </Label>
+                        </div>
+                        <div className="relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
+                                <Hash size={18} />
+                            </div>
+                            <Input
+                                id="short_name"
+                                value={data.short_name}
+                                onChange={handleShortNameChange}
+                                className={classNames('pl-10', { 'border-destructive': errors.short_name })}
+                                placeholder="Nombre corto de la zonal"
+                            />
+                        </div>
+                        {errors.short_name && (
+                            <p className="text-sm text-destructive mt-1">{errors.short_name}</p>
                         )}
-                        aria-invalid={errors.short_name ? 'true' : 'false'}
-                        aria-errormessage={errors.short_name ? 'short_name-error' : undefined}
-                    />
-                    {errors.short_name && (
-                        <p className="text-sm font-medium text-destructive" id="short_name-error" role="alert">
-                            {errors.short_name}
-                        </p>
-                    )}
-                </div>
+                    </div>
 
-                <div className="flex items-center space-x-2">
-                    <Checkbox
-                        id="active"
-                        checked={data.active}
-                        onCheckedChange={(checked) => setData('active', checked as boolean)}
-                    />
-                    <Label htmlFor="active">Activo</Label>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox
+                            id="active"
+                            checked={data.active}
+                            onCheckedChange={(checked) => setData('active', checked as boolean)}
+                        />
+                        <Label htmlFor="active">Activo</Label>
+                    </div>
                 </div>
             </form>
         </CrudModal>
