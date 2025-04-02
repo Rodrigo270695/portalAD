@@ -44,7 +44,7 @@ export default function Dashboard({ userData }: DashboardProps) {
                                 <User className="size-8 sm:size-10 text-blue-500" />
                             </div>
                         </div>
-                        <PDVInfo 
+                        <PDVInfo
                             name={userData.name}
                             dni={userData.dni}
                             vendorName={userData.vendorName}
@@ -57,10 +57,7 @@ export default function Dashboard({ userData }: DashboardProps) {
                         />
                     </CardDashboard>
 
-                    <CardDashboard title="Avance de Ventas">
-                        <div className="bg-emerald-500 p-2 sm:p-3 text-white font-medium text-base sm:text-lg">
-                            Avance de Ventas
-                        </div>
+                    <CardDashboard title="Avance de Ventas" variant="emerald">
                         <div className="p-2 sm:p-4 flex flex-col space-y-3">
                             <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                 <div className="bg-blue-200 rounded-lg p-2 sm:p-3">
@@ -103,7 +100,7 @@ export default function Dashboard({ userData }: DashboardProps) {
                         </div>
                     </CardDashboard>
 
-                    <CardDashboard title="Detalle Diario">
+                    <CardDashboard title="Detalle Diario" variant="orange">
                         <div className="p-2 sm:p-4">
                             <button
                                 onClick={() => setShowDailyDetails(!showDailyDetails)}
@@ -172,7 +169,7 @@ export default function Dashboard({ userData }: DashboardProps) {
 
                 {/* Segunda fila - 2 tarjetas */}
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                    <CardDashboard title="Información Importante">
+                    <CardDashboard title="Información Importante" variant="purple">
                         <div className="p-2 sm:p-4 space-y-2 sm:space-y-3">
                             <div className="flex items-start gap-2 sm:gap-3 bg-blue-50 p-2 sm:p-3 rounded-lg">
                                 <Info className="text-blue-500 mt-0.5" size={isMobile ? 16 : 20} />
@@ -196,7 +193,7 @@ export default function Dashboard({ userData }: DashboardProps) {
                         </div>
                     </CardDashboard>
 
-                    <CardDashboard title="Acciones Rápidas">
+                    <CardDashboard title="Acciones Rápidas" variant="red">
                         <div className="p-2 sm:p-4 grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2">
                             <button className="flex items-center gap-2 sm:gap-3 bg-blue-50 p-2 sm:p-3 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors">
                                 <Plus size={isMobile ? 16 : 20} />

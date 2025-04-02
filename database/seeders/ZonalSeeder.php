@@ -14,13 +14,38 @@ class ZonalSeeder extends Seeder
     public function run(): void
     {
         Zonal::create([
-            'name' => 'Chiclayo',
+            'name' => 'CHICLAYO',
             'short_name' => 'CHI',
             'active' => true,
         ]);
         Zonal::create([
-            'name' => 'Piura',
+            'name' => 'IQUITOS',
+            'short_name' => 'IQUIT',
+            'active' => true,
+        ]);
+        Zonal::create(attributes: [
+            'name' => 'CAJAMARCA',
+            'short_name' => 'CAJAM',
+            'active' => true,
+        ]);
+        Zonal::create([
+            'name' => 'PIURA',
             'short_name' => 'PIU',
+            'active' => true,
+        ]);
+        Zonal::create([
+            'name' => 'TARAPOTO',
+            'short_name' => 'TARAP',
+            'active' => true,
+        ]);
+        Zonal::create(attributes: [
+            'name' => 'TRUJILLO',
+            'short_name' => 'TRU',
+            'active' => true,
+        ]);
+        Zonal::create(attributes: [
+            'name' => 'TUMBES',
+            'short_name' => 'TUM',
             'active' => true,
         ]);
     }

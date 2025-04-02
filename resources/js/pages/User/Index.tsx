@@ -27,7 +27,6 @@ interface Circuit {
 interface User {
     id: number;
     name: string;
-    email: string;
     dni: string;
     cel: string;
     circuit_id: number;
@@ -35,6 +34,7 @@ interface User {
     circuit: Circuit;
     zonificador: User | null;
     roles: { id: number; name: string }[];
+    active: boolean;
 }
 
 interface Role {
@@ -183,6 +183,12 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
         return colors[roleName] || 'bg-gray-500';
     };
 
+    const getStatusBadgeStyle = (active: boolean) => {
+        return active
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Usuarios" />
@@ -252,8 +258,12 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
                                             {user.dni}
                                         </p>
                                         <p className="text-sm">
-                                            <span className="font-medium">Email:</span>{' '}
-                                            {user.email}
+                                            <span className="font-medium">Estado:</span>{' '}
+                                            <span
+                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeStyle(user.active)}`}
+                                            >
+                                                {user.active ? 'Activo' : 'Inactivo'}
+                                            </span>
                                         </p>
                                         <p className="text-sm flex items-center">
                                             <span className="font-medium mr-1">Celular:</span>{' '}
@@ -334,7 +344,7 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
                             <TableRow>
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>DNI</TableHead>
-                                <TableHead>Email</TableHead>
+                                <TableHead>Estado</TableHead>
                                 <TableHead>Celular</TableHead>
                                 <TableHead>Circuito</TableHead>
                                 <TableHead>Zonificado</TableHead>
@@ -357,7 +367,13 @@ export default function Index({ users, circuits, zonificadores, roles, filters }
                                     <TableRow key={user.id}>
                                         <TableCell className="font-medium">{user.name}</TableCell>
                                         <TableCell>{user.dni}</TableCell>
-                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell>
+                                            <span
+                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeStyle(user.active)}`}
+                                            >
+                                                {user.active ? 'Activo' : 'Inactivo'}
+                                            </span>
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex items-center">
                                                 <Phone className="h-4 w-4 mr-1" />

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('action', ['PDV REGULAR','PDV PREMIUM'])->default('PDV REGULAR');
+            $table->boolean('active')->default(true);
             $table->foreignId('zonificado_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('circuit_id')->constrained()->restrictOnDelete();
             $table->rememberToken();

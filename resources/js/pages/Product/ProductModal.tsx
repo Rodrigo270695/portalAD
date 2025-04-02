@@ -2,51 +2,52 @@ import CrudModal, { ModalSize } from '@/components/ui/crud-modal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { useForm } from '@inertiajs/react';
 import { FormEvent, useEffect } from 'react';
 import classNames from 'classnames';
-import { Building2, Hash } from 'lucide-react';
+import { Box, FileText } from 'lucide-react';
 
-interface Zonal {
+interface Product {
     id: number;
     name: string;
-    short_name: string;
+    description: string | null;
     active: boolean;
 }
 
-interface ZonalModalProps {
+interface ProductModalProps {
     isOpen: boolean;
     onClose: () => void;
-    zonal?: Zonal;
+    product?: Product;
     size?: ModalSize;
 }
 
-export default function ZonalModal({ isOpen, onClose, zonal, size = 'md' }: ZonalModalProps) {
-    const isEditing = !!zonal;
+export default function ProductModal({ isOpen, onClose, product, size = 'md' }: ProductModalProps) {
+    const isEditing = !!product;
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<{
         name: string;
-        short_name: string;
+        description: string;
         active: boolean;
     }>({
         name: '',
-        short_name: '',
+        description: '',
         active: true,
     });
 
     useEffect(() => {
         if (isOpen) {
             setData({
-                name: zonal?.name || '',
-                short_name: zonal?.short_name || '',
-                active: zonal?.active ?? true,
+                name: product?.name || '',
+                description: product?.description || '',
+                active: product?.active ?? true,
             });
         } else {
             reset();
             clearErrors();
         }
-    }, [isOpen, zonal, setData, reset, clearErrors]);
+    }, [isOpen, product, setData, reset, clearErrors]);
 
     const capitalizeFirstLetter = (str: string) => {
         if (!str) return str;
@@ -58,22 +59,17 @@ export default function ZonalModal({ isOpen, onClose, zonal, size = 'md' }: Zona
         setData('name', value);
     };
 
-    const handleShortNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.toUpperCase();
-        setData('short_name', value);
-    };
-
     const handleSubmit = (e?: FormEvent) => {
         if (e) e.preventDefault();
 
         const submitForm = isEditing ? put : post;
-        const url = isEditing ? `/zonals/${zonal.id}` : '/zonals';
+        const url = isEditing ? `/products/${product.id}` : '/products';
 
         submitForm(url, {
             onSuccess: () => {
                 toast.success({
-                    title: isEditing ? "Zonal actualizado" : "Zonal creado",
-                    description: `El zonal "${data.name}" ha sido ${isEditing ? 'actualizado' : 'creado'} correctamente.`
+                    title: isEditing ? "Producto actualizado" : "Producto creado",
+                    description: `El producto "${data.name}" ha sido ${isEditing ? 'actualizado' : 'creado'} correctamente.`
                 });
                 reset();
                 clearErrors();
@@ -92,15 +88,15 @@ export default function ZonalModal({ isOpen, onClose, zonal, size = 'md' }: Zona
         <CrudModal
             isOpen={isOpen}
             onClose={handleClose}
-            title={isEditing ? 'Editar Zonal' : 'Crear Zonal'}
-            description={isEditing ? 'Modifica los datos del zonal seleccionado.' : 'Ingresa los datos para crear un nuevo zonal.'}
+            title={isEditing ? 'Editar Producto' : 'Crear Producto'}
+            description={isEditing ? 'Modifica los datos del producto seleccionado.' : 'Ingresa los datos para crear un nuevo producto.'}
             size={size}
             isProcessing={processing}
             onSubmit={handleSubmit}
             submitLabel={isEditing ? 'Actualizar' : 'Guardar'}
             preventCloseOnClickOutside={true}
         >
-            <form id="zonalForm" className="space-y-4" onSubmit={handleSubmit}>
+            <form id="productForm" className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid gap-6">
                     <div>
                         <div className="mb-1">
@@ -110,14 +106,14 @@ export default function ZonalModal({ isOpen, onClose, zonal, size = 'md' }: Zona
                         </div>
                         <div className="relative">
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
-                                <Building2 size={18} />
+                                <Box size={18} />
                             </div>
                             <Input
                                 id="name"
                                 value={data.name}
                                 onChange={handleNameChange}
                                 className={classNames('pl-10', { 'border-destructive': errors.name })}
-                                placeholder="Nombre de la zonal"
+                                placeholder="Nombre del producto"
                             />
                         </div>
                         {errors.name && (
@@ -127,24 +123,25 @@ export default function ZonalModal({ isOpen, onClose, zonal, size = 'md' }: Zona
 
                     <div>
                         <div className="mb-1">
-                            <Label htmlFor="short_name" className={classNames({ 'text-destructive': errors.short_name })} required>
-                                Nombre corto
+                            <Label htmlFor="description" className={classNames({ 'text-destructive': errors.description })}>
+                                Descripción
                             </Label>
                         </div>
                         <div className="relative">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
-                                <Hash size={18} />
+                            <div className="absolute left-3 top-2.5 text-blue-600">
+                                <FileText size={18} />
                             </div>
-                            <Input
-                                id="short_name"
-                                value={data.short_name}
-                                onChange={handleShortNameChange}
-                                className={classNames('pl-10', { 'border-destructive': errors.short_name })}
-                                placeholder="Nombre corto de la zonal"
+                            <Textarea
+                                id="description"
+                                value={data.description}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('description', e.target.value)}
+                                className={classNames('pl-10', { 'border-destructive': errors.description })}
+                                placeholder="Descripción del producto"
+                                rows={4}
                             />
                         </div>
-                        {errors.short_name && (
-                            <p className="text-sm text-destructive mt-1">{errors.short_name}</p>
+                        {errors.description && (
+                            <p className="text-sm text-destructive mt-1">{errors.description}</p>
                         )}
                     </div>
 

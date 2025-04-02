@@ -28,8 +28,8 @@ class DashboardController extends Controller
                 'vendorPhone' => $userData->zonificador?->cel ?? 'No asignado',
                 'channel' => 'PDV',
                 'group' => $userData->circuit?->name ?? 'No asignado',
-                'updateDate' => $userData->updated_at->format('Y-m-d'),
-                'pdvLevel' => 'PDV REGULAR'
+                'updateDate' => $userData->updated_at->format('d-m-Y'),
+                'pdvLevel' => $userData->action ?? 'PDV REGULAR'
             ]
         ]);
     }

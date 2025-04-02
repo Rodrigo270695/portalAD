@@ -29,11 +29,9 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Define the props that are shared by default.
+     * Defines the props that are shared by default.
      *
      * @see https://inertiajs.com/shared-data
-     *
-     * @return array<string, mixed>
      */
     public function share(Request $request): array
     {
@@ -49,7 +47,7 @@ class HandleInertiaRequests extends Middleware
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
-            ]
+            ],
         ];
     }
 }

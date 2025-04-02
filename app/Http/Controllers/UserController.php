@@ -29,7 +29,6 @@ class UserController extends Controller
         $users = User::with(['circuit.zonal', 'zonificador', 'roles'])
             ->when($search, function ($query) use ($search) {
                 return $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('dni', 'like', "%{$search}%")
                     ->orWhere('cel', 'like', "%{$search}%")
                     ->orWhereHas('circuit', function ($query) use ($search) {
@@ -68,7 +67,16 @@ class UserController extends Controller
      */
     public function store(UserRequest $request)
     {
-        $validated = $request->validated();
+        $validated = $request->safe()->only([
+            'name',
+            'dni',
+            'cel',
+            'password',
+            'circuit_id',
+            'zonificado_id',
+            'role',
+            'active'
+        ]);
         
         // Encriptar la contraseña
         $validated['password'] = Hash::make($validated['password']);
@@ -93,7 +101,16 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, User $user)
     {
-        $validated = $request->validated();
+        $validated = $request->safe()->only([
+            'name',
+            'dni',
+            'cel',
+            'password',
+            'circuit_id',
+            'zonificado_id',
+            'role',
+            'active'
+        ]);
         
         // Solo actualizar la contraseña si se proporciona
         if (isset($validated['password']) && $validated['password']) {

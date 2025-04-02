@@ -26,6 +26,8 @@ class User extends Authenticatable
         'cel',
         'zonificado_id',
         'circuit_id',
+        'active',
+        'action',
     ];
 
     /**
@@ -48,6 +50,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'active' => 'boolean',
         ];
     }
 

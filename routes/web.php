@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CircuitController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TackController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ZonalController;
@@ -25,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('zonals', ZonalController::class);
     Route::resource('circuits', CircuitController::class);
     Route::resource('users', UserController::class);
+    Route::resource('products', ProductController::class);
     Route::resource('sellers', SellerController::class)->except(['index', 'show', 'create', 'edit']);
 
     // Rutas de Tacks

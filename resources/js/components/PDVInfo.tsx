@@ -41,12 +41,12 @@ const PDVInfo: React.FC<PDVInfoProps> = ({
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InfoCard icon={<Store className="text-blue-500" size={18} />} label="Nombre PDV" value={name} />
-            <InfoCard icon={<CreditCard className="text-blue-500" size={18} />} label="DNI Responsable" value={dni} />
-            <InfoCard icon={<UserCircle className="text-blue-500" size={18} />} label="Vendedor" value={vendorName} />
-            <InfoCard icon={<CreditCard className="text-blue-500" size={18} />} label="DNI Vendedor" value={vendorDNI} />
+            <InfoCard icon={<CreditCard className="text-blue-500" size={18} />} label="DNI PDV" value={dni} />
+            <InfoCard icon={<UserCircle className="text-blue-500" size={18} />} label="Zonificado" value={vendorName} />
+            <InfoCard icon={<CreditCard className="text-blue-500" size={18} />} label="DNI Zonificado" value={vendorDNI} />
             <InfoCard
                 icon={<Phone className="text-blue-500" size={18} />}
-                label="Celular Vendedor"
+                label="Celular Zonificado"
                 value={
                     <div className="flex items-center space-x-2">
                         <div className="flex items-center gap-1 min-w-0 flex-shrink">
@@ -80,7 +80,7 @@ const PDVInfo: React.FC<PDVInfoProps> = ({
                 }
             />
             <InfoCard icon={<Building2 className="text-blue-500" size={18} />} label="Canal" value={channel} />
-            <InfoCard icon={<Users2 className="text-blue-500" size={18} />} label="Grupo" value={group} />
+            <InfoCard icon={<Users2 className="text-blue-500" size={18} />} label="Circuito" value={group} />
             <InfoCard icon={<Calendar className="text-blue-500" size={18} />} label="Fecha de Actualización" value={updateDate} />
             <InfoCard icon={<Award className="text-blue-500" size={18} />} label="Nivel PDV" value={pdvLevel}
                 className="md:col-span-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20" />

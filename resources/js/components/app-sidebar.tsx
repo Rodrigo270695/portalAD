@@ -48,10 +48,15 @@ const mainNavItems: NavItem[] = [
         icon: ChartLine,
         children: [
             {
+                title: 'Producto',
+                href: '/products',
+                icon: Dot,
+            },
+            {
                 title: 'Venta',
                 href: '/sales',
                 icon: Dot,
-            },
+            }
         ]
     },
     {
