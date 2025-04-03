@@ -25,7 +25,11 @@ class SaleController extends Controller
         $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
         $date = $request->input('date', now()->format('Y-m-d'));
-        $query = Sale::with(['user.circuit.zonal', 'user.zonificador.circuit.zonal', 'webProduct']);
+        $query = Sale::with([
+            'user.circuit.zonal',
+            'user.zonificador.circuit.zonal',
+            'webproduct.product'
+        ]);
 
         // Filtro por fecha
         if ($date) {
@@ -74,14 +78,21 @@ class SaleController extends Controller
         ];
 
         // Paginar los resultados
-        $sales = $query->orderBy('date', 'desc')
+        $sales = $query
+            ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate($request->per_page ?? 10)
             ->withQueryString();
 
         $users = User::role('pdv')->orderBy('name')->get(['id', 'name', 'dni']);
-        $webProducts = WebProduct::orderBy('name')->get(['id', 'name']);
-
+        $webProducts = WebProduct::query()
+            ->select('id', 'name', 'description', 'product_id')
+            ->with(['product' => function($query) {
+                $query->select('id', 'name', 'description');
+            }])
+            ->whereHas('product')
+            ->orderBy('name')
+            ->get();
         // Obtener fechas únicas para el filtro
         $dates = Sale::distinct()->orderBy('date', 'desc')->pluck('date');
 

@@ -6,9 +6,9 @@ import { Pagination } from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Edit, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { Edit, Plus, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import SaleModal from './SaleModal';
+import SaleModal, { type Sale } from './SaleModal';
 import { ModalSize } from '@/components/ui/crud-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Swal from 'sweetalert2';
@@ -36,13 +36,23 @@ interface User {
     zonificador?: User;
 }
 
+interface Product {
+    id: number;
+    name: string;
+    description?: string;
+    active?: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
 interface WebProduct {
     id: number;
     name: string;
-    product: {
-        id: number;
-        name: string;
-    };
+    description?: string;
+    product_id: number;
+    product?: Product | null;
+    created_at?: string;
+    updated_at?: string;
 }
 
 interface Sale {
@@ -57,7 +67,7 @@ interface Sale {
     user_id: number;
     webproduct_id: number;
     user: User;
-    webProduct: WebProduct;
+    webproduct: WebProduct;
 }
 
 interface Props {
@@ -87,7 +97,12 @@ interface Props {
         cluster_quality?: string;
         action?: string;
     };
-    total: number;
+    totals: {
+        recharge_amount: number;
+        accumulated_amount: number;
+        commissionable_charges: number;
+    };
+    dates: string[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -104,7 +119,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const clusterQualities = ['A+', 'A', 'B', 'C'];
 const actions = ['REGULAR', 'PREMIUM'];
 
-export default function Index({ sales, users, webProducts, filters, total }: Props) {
+export default function Index({ sales, users, webProducts, filters, totals, dates }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [perPage, setPerPage] = useState(filters.per_page?.toString() || '10');
     const [date, setDate] = useState(filters.date || new Date().toISOString().split('T')[0]);
@@ -135,27 +150,12 @@ export default function Index({ sales, users, webProducts, filters, total }: Pro
             },
             preserveState: true,
             preserveScroll: true,
-            only: ['sales', 'filters', 'total']
+            only: ['sales', 'filters', 'totals']
         });
     }, [debouncedSearch, perPage, date, debouncedPdv, debouncedZonificado, clusterQuality, action]);
 
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
-        router.reload({
-            data: {
-                search,
-                page: 1,
-                per_page: value,
-                date,
-                pdv,
-                zonificado,
-                cluster_quality: clusterQuality,
-                action,
-            },
-            preserveState: true,
-            preserveScroll: true,
-            only: ['sales', 'filters', 'total']
-        });
     };
 
     const handleBulkDelete = async () => {
@@ -293,29 +293,58 @@ export default function Index({ sales, users, webProducts, filters, total }: Pro
                 <div className="space-y-4 mb-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Total de Ventas: {total.toLocaleString()}</CardTitle>
+                            <CardTitle>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <span className="text-sm text-muted-foreground block">Monto de Recargas</span>
+                                        <span className="text-lg font-bold">{totals.recharge_amount?.toLocaleString() ?? '0'}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-sm text-muted-foreground block">Monto Acumulado</span>
+                                        <span className="text-lg font-bold">{totals.accumulated_amount?.toLocaleString() ?? '0'}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-sm text-muted-foreground block">Cargos Comisionables</span>
+                                        <span className="text-lg font-bold">{totals.commissionable_charges?.toLocaleString() ?? '0'}</span>
+                                    </div>
+                                </div>
+                            </CardTitle>
                         </CardHeader>
                     </Card>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                         <div>
                             <Label htmlFor="date">Fecha</Label>
-                            <Input
-                                type="date"
+                            <Select
                                 value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                            />
+                                onValueChange={setDate}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione fecha" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {dates?.map((date) => (
+                                        <SelectItem key={date} value={date || new Date().toISOString().split('T')[0]}>
+                                            {new Date(date).toLocaleDateString('es-ES', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
+                                            })}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div>
                             <Label htmlFor="cluster_quality">Calidad de Cluster</Label>
                             <Select
                                 value={clusterQuality}
-                                onValueChange={(value) => setClusterQuality(value)}
+                                onValueChange={setClusterQuality}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Seleccione calidad" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Todos</SelectItem>
+                                    <SelectItem value="all">Todas</SelectItem>
                                     {clusterQualities.map((quality) => (
                                         <SelectItem key={quality} value={quality}>
                                             {quality}
@@ -328,16 +357,16 @@ export default function Index({ sales, users, webProducts, filters, total }: Pro
                             <Label htmlFor="action">Acción</Label>
                             <Select
                                 value={action}
-                                onValueChange={(value) => setAction(value)}
+                                onValueChange={setAction}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Seleccione acción" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Todas</SelectItem>
-                                    {actions.map((act) => (
-                                        <SelectItem key={act} value={act}>
-                                            {act}
+                                    <SelectItem value="all">Todas</SelectItem>
+                                    {actions.map((action) => (
+                                        <SelectItem key={action} value={action}>
+                                            {action}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -369,6 +398,23 @@ export default function Index({ sales, users, webProducts, filters, total }: Pro
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Buscar..."
                             />
+                        </div>
+                        <div>
+                            <Label htmlFor="per_page">Registros por página</Label>
+                            <Select
+                                value={perPage}
+                                onValueChange={handlePerPageChange}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione registros por página" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="10">10</SelectItem>
+                                    <SelectItem value="20">20</SelectItem>
+                                    <SelectItem value="50">50</SelectItem>
+                                    <SelectItem value="100">100</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </div>
@@ -417,15 +463,15 @@ export default function Index({ sales, users, webProducts, filters, total }: Pro
                                         )}
                                         <p className="text-sm">
                                             <span className="font-medium">Producto:</span>{' '}
-                                            {sale.webProduct.product.name} - {sale.webProduct.name}
+                                            {sale.webproduct?.product?.name || 'Producto sin nombre'} - {sale.webproduct?.name || 'Sin nombre'}
                                         </p>
                                         <p className="text-sm">
                                             <span className="font-medium">Monto de recarga:</span>{' '}
-                                            {sale.recharge_amount.toLocaleString()}
+                                            {sale.recharge_amount?.toLocaleString() ?? '0'}
                                         </p>
                                         <p className="text-sm">
                                             <span className="font-medium">Monto acumulado:</span>{' '}
-                                            {sale.accumulated_amount.toLocaleString()}
+                                            {sale.accumulated_amount?.toLocaleString() ?? '0'}
                                         </p>
                                         <p className="text-sm">
                                             <span className="font-medium">Cargo comisionable:</span>{' '}
@@ -543,8 +589,8 @@ export default function Index({ sales, users, webProducts, filters, total }: Pro
                                                 sale.action === 'PREMIUM' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
                                                 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
                                             }`}>
-                                                {sale.action}
-                                            </span>
+                                            {sale.action}
+                                        </span>
                                         </TableCell>
                                         <TableCell>{sale.user.name} ({sale.user.dni})</TableCell>
                                         <TableCell>
@@ -554,16 +600,29 @@ export default function Index({ sales, users, webProducts, filters, total }: Pro
                                                 </span>
                                             )}
                                         </TableCell>
-                                        <TableCell>{sale.webProduct.product.name} - {sale.webProduct.name}</TableCell>
-                                        <TableCell>{sale.recharge_amount.toLocaleString()}</TableCell>
-                                        <TableCell>{sale.accumulated_amount.toLocaleString()}</TableCell>
+                                        <TableCell>
+                                            {sale.webproduct ? (
+                                                <div className="flex flex-col space-y-1">
+                                                    <span className="font-medium text-sm">
+                                                        {sale.webproduct.product?.name || 'Producto sin nombre'}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {sale.webproduct.name}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-sm text-muted-foreground">Sin producto web</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>{sale.recharge_amount?.toLocaleString() ?? '0'}</TableCell>
+                                        <TableCell>{sale.accumulated_amount?.toLocaleString() ?? '0'}</TableCell>
                                         <TableCell>{sale.commissionable_charge ? 'Sí' : 'No'}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button
-                                                            variant="yellow"
+                                                            variant="ghostYellow"
                                                             size="icon"
                                                             onClick={() => openEditModal(sale)}
                                                         >

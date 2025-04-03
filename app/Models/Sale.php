@@ -41,7 +41,7 @@ class Sale extends Model
     /**
      * Get the web product associated with the sale.
      */
-    public function webProduct(): BelongsTo
+    public function webproduct(): BelongsTo
     {
         return $this->belongsTo(WebProduct::class);
     }

@@ -37,7 +37,7 @@ interface WebProduct {
     };
 }
 
-interface Sale {
+export interface Sale {
     id: number;
     date: string;
     cluster_quality: string;
@@ -64,7 +64,7 @@ interface SaleModalProps {
 const clusterQualities = ['A+', 'A', 'B', 'C'];
 const actions = ['REGULAR', 'PREMIUM'];
 
-export default function SaleModal({ isOpen, onClose, sale, size = 'md', users, webProducts }: SaleModalProps) {
+const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: SaleModalProps) => {
     const isEditing = !!sale;
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<{
@@ -361,9 +361,9 @@ export default function SaleModal({ isOpen, onClose, sale, size = 'md', users, w
                                         <SelectValue placeholder="Seleccione un producto" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {webProducts.map((webProduct) => (
+                                        {webProducts?.map((webProduct) => (
                                             <SelectItem key={webProduct.id} value={webProduct.id.toString()}>
-                                                {webProduct.product.name} - {webProduct.name}
+                                                {webProduct.product?.name || 'Producto sin nombre'} - {webProduct.name || 'Sin nombre'}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -391,3 +391,5 @@ export default function SaleModal({ isOpen, onClose, sale, size = 'md', users, w
         </CrudModal>
     );
 }
+
+export default SaleModal;

@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Product;
+use App\Models\Sale;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Product;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WebProduct extends Model
 {
@@ -18,6 +20,11 @@ class WebProduct extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class, 'webproduct_id', 'id');
     }
 }
