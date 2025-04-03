@@ -3,6 +3,7 @@
 use App\Http\Controllers\CircuitController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TackController;
 use App\Http\Controllers\UserController;
@@ -52,6 +53,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('shares/bulk/template', [ShareController::class, 'downloadTemplate'])->name('shares.bulk.template');
     Route::post('shares/bulk/upload', [ShareController::class, 'upload'])->name('shares.bulk.upload');
     Route::resource('shares', ShareController::class);
+
+    // Rutas de Sales (Ventas)
+    Route::delete('sales/bulk-delete', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
+    Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
+    Route::get('sales/bulk/template', [SaleController::class, 'downloadTemplate'])->name('sales.bulk.template');
+    Route::post('sales/bulk/upload', [SaleController::class, 'upload'])->name('sales.bulk.upload');
+    Route::resource('sales', SaleController::class);
 });
 
 require __DIR__.'/settings.php';

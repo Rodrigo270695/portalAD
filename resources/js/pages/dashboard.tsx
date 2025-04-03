@@ -18,6 +18,9 @@ interface DashboardProps {
         group: string;
         updateDate: string;
         pdvLevel: string;
+        totalShare: number;
+        pdvCount: number;
+        isZonificado: boolean;
     };
 }
 
@@ -36,8 +39,8 @@ export default function Dashboard({ userData }: DashboardProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 p-2 sm:p-4">
-                {/* Primera fila - 3 tarjetas principales */}
-                <div className="grid auto-rows-min gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {/* Primera fila - Información PDV y Avance de Ventas */}
+                <div className="grid auto-rows-min gap-4 grid-cols-1 md:grid-cols-2">
                     <CardDashboard title="Información del PDV">
                         <div className="flex justify-center mb-2">
                             <div className="size-16 sm:size-20 rounded-full border-4 border-blue-300 flex items-center justify-center bg-blue-100">
@@ -62,9 +65,17 @@ export default function Dashboard({ userData }: DashboardProps) {
                             <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                 <div className="bg-blue-200 rounded-lg p-2 sm:p-3">
                                     <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Cuota prepago</div>
-                                    <div className="flex items-center">
-                                        <FileText className="text-blue-800 mr-2" size={isMobile ? 16 : 20} />
-                                        <span className="text-blue-900 text-xl sm:text-2xl font-bold">97</span>
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center">
+                                            <FileText className="text-blue-800 mr-2" size={isMobile ? 16 : 20} />
+                                            <span className="text-blue-900 text-xl sm:text-2xl font-bold">{userData.totalShare}</span>
+                                        </div>
+                                        {userData.isZonificado && (
+                                            <div className="flex items-center text-sm text-blue-600">
+                                                <User className="mr-1" size={16} />
+                                                <span>{userData.pdvCount} PDV{userData.pdvCount !== 1 ? 's' : ''}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -99,8 +110,11 @@ export default function Dashboard({ userData }: DashboardProps) {
                             </div>
                         </div>
                     </CardDashboard>
+                </div>
 
-                    <CardDashboard title="Detalle Diario" variant="orange">
+                {/* Detalle diario - Ancho completo */}
+                <div className="grid gap-4 grid-cols-1">
+                <CardDashboard title="Detalle Diario" variant="orange">
                         <div className="p-2 sm:p-4">
                             <button
                                 onClick={() => setShowDailyDetails(!showDailyDetails)}
@@ -165,10 +179,6 @@ export default function Dashboard({ userData }: DashboardProps) {
                             )}
                         </div>
                     </CardDashboard>
-                </div>
-
-                {/* Segunda fila - 2 tarjetas */}
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                     <CardDashboard title="Información Importante" variant="purple">
                         <div className="p-2 sm:p-4 space-y-2 sm:space-y-3">
                             <div className="flex items-start gap-2 sm:gap-3 bg-blue-50 p-2 sm:p-3 rounded-lg">
