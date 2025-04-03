@@ -95,4 +95,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Seller::class);
     }
+
+    /**
+     * Get the shares that belong to this user.
+     */
+    public function shares()
+    {
+        return $this->hasMany(Share::class);
+    }
 }

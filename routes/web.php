@@ -3,8 +3,10 @@
 use App\Http\Controllers\CircuitController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TackController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WebproductController;
 use App\Http\Controllers\ZonalController;
 use App\Http\Controllers\SellerController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +39,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Rutas de Sellers
     Route::get('/users/{user}/sellers', [SellerController::class, 'index'])->name('sellers.index');
+
+    // Rutas de Webproducts
+    Route::get('/products/{product}/webproducts', [WebproductController::class, 'index'])->name('webproducts.index');
+    Route::post('/webproducts', [WebproductController::class, 'store'])->name('webproducts.store');
+    Route::put('/webproducts/{webproduct}', [WebproductController::class, 'update'])->name('webproducts.update');
+    Route::delete('/webproducts/{webproduct}', [WebproductController::class, 'destroy'])->name('webproducts.destroy');
+
+    // Rutas de Shares (Cuotas)
+    Route::delete('shares/bulk-delete', [ShareController::class, 'bulkDestroy'])->name('shares.bulk-destroy');
+    Route::get('shares/bulk', [ShareController::class, 'bulk'])->name('shares.bulk');
+    Route::get('shares/bulk/template', [ShareController::class, 'downloadTemplate'])->name('shares.bulk.template');
+    Route::post('shares/bulk/upload', [ShareController::class, 'upload'])->name('shares.bulk.upload');
+    Route::resource('shares', ShareController::class);
 });
 
 require __DIR__.'/settings.php';

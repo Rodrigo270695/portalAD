@@ -5,6 +5,7 @@ import { type ReactNode } from 'react';
 interface AppLayoutProps {
     children: ReactNode;
     breadcrumbs?: BreadcrumbItem[];
+    title?: string;
 }
 
 export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => (

@@ -53,6 +53,11 @@ const mainNavItems: NavItem[] = [
                 icon: Dot,
             },
             {
+                title: 'Cuota',
+                href: '/shares',
+                icon: Dot,
+            },
+            {
                 title: 'Venta',
                 href: '/sales',
                 icon: Dot,

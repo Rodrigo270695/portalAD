@@ -2,13 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Edit, Plus, Search, Trash2, Globe } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import ProductModal from '@/pages/Product/ProductModal';
+import WebproductModal from './WebproductModal';
 import { ModalSize } from '@/components/ui/crud-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Swal from 'sweetalert2';
@@ -17,13 +17,19 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 interface Product {
     id: number;
     name: string;
+}
+
+interface Webproduct {
+    id: number;
+    name: string;
     description: string | null;
-    active: boolean;
+    product_id: number;
+    product?: Product;
 }
 
 interface Props {
-    products: {
-        data: Product[];
+    webproducts: {
+        data: Webproduct[];
         links: {
             url: string | null;
             label: string;
@@ -36,6 +42,7 @@ interface Props {
         from: number;
         to: number;
     };
+    product: Product;
     filters: {
         search: string;
         page?: number;
@@ -52,53 +59,55 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: 'Productos',
         href: '/products',
     },
+    {
+        title: 'Productos Web',
+        href: '#',
+    },
 ];
 
-export default function Index({ products, filters }: Props) {
+export default function Index({ webproducts, product, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [perPage, setPerPage] = useState(filters.per_page?.toString() || '10');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
-    const [modalSize, setModalSize] = useState<ModalSize>('lg');
+    const [selectedWebproduct, setSelectedWebproduct] = useState<Webproduct | undefined>(undefined);
+    const [modalSize, setModalSize] = useState<ModalSize>('md');
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (search !== filters.search) {
-                // Mantener la página actual si solo cambia la búsqueda
-                const currentPage = filters.page || products.current_page;
-                router.get('/products', {
+                const currentPage = filters.page || webproducts.current_page;
+                router.get(`/products/${product.id}/webproducts`, {
                     search,
                     page: currentPage,
                     per_page: perPage
                 }, {
                     preserveState: true,
                     preserveScroll: true,
-                    only: ['products', 'filters']
+                    only: ['webproducts', 'filters']
                 });
             }
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [search, filters.search, filters.page, products.current_page, perPage]);
+    }, [search, filters.search, filters.page, webproducts.current_page, perPage, product.id]);
 
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
-        // Al cambiar registros por página, volvemos a la página 1
-        router.get('/products', {
+        router.get(`/products/${product.id}/webproducts`, {
             search,
             page: 1,
             per_page: value
         }, {
             preserveState: true,
             preserveScroll: true,
-            only: ['products', 'filters']
+            only: ['webproducts', 'filters']
         });
     };
 
     const handleDelete = (id: number, name: string) => {
         Swal.fire({
             title: '¿Estás seguro?',
-            text: `¿Realmente deseas eliminar el producto "${name}"?`,
+            text: `¿Realmente deseas eliminar el producto web "${name}"?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -108,11 +117,11 @@ export default function Index({ products, filters }: Props) {
             reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
-                router.delete(`/products/${id}`, {
+                router.delete(`/webproducts/${id}`, {
                     onSuccess: () => {
                         Swal.fire({
                             title: 'Eliminado',
-                            text: `El producto "${name}" ha sido eliminado correctamente.`,
+                            text: `El producto web "${name}" ha sido eliminado correctamente.`,
                             icon: 'success',
                             timer: 2000,
                             timerProgressBar: true,
@@ -122,7 +131,7 @@ export default function Index({ products, filters }: Props) {
                     onError: () => {
                         Swal.fire({
                             title: 'Error',
-                            text: 'No se pudo eliminar el producto. Intenta nuevamente.',
+                            text: 'No se pudo eliminar el producto web. Intenta nuevamente.',
                             icon: 'error',
                             confirmButtonText: 'Aceptar'
                         });
@@ -132,46 +141,50 @@ export default function Index({ products, filters }: Props) {
         });
     };
 
-    const openCreateModal = (size: ModalSize = 'lg') => {
-        setSelectedProduct(undefined);
+    const openCreateModal = (size: ModalSize = 'md') => {
+        setSelectedWebproduct(undefined);
         setModalSize(size);
         setIsModalOpen(true);
     };
 
-    const openEditModal = (product: Product, size: ModalSize = 'md') => {
-        setSelectedProduct(product);
+    const openEditModal = (webproduct: Webproduct, size: ModalSize = 'md') => {
+        setSelectedWebproduct(webproduct);
         setModalSize(size);
         setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setSelectedProduct(undefined);
-    };
-
-    const truncateText = (text: string | null, maxLength: number = 70) => {
-        if (!text) return 'Sin descripción';
-        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Productos" />
+            <Head title="Productos Web" />
 
             <div className="flex flex-col gap-4 p-4">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Productos</h1>
-                    <Button onClick={() => openCreateModal()}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Nuevo Producto
-                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold">Productos Web</h1>
+                        <p className="text-muted-foreground">
+                            Administra los productos web de {product.name}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => router.get('/products')}
+                        >
+                            <Package className="h-4 w-4 mr-2" />
+                            Volver
+                        </Button>
+                        <Button onClick={() => openCreateModal()}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Nuevo Producto Web
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                         <Input
-                            placeholder="Buscar productos..."
+                            placeholder="Buscar productos web..."
                             className="pl-10"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -197,61 +210,31 @@ export default function Index({ products, filters }: Props) {
 
                 {/* Vista móvil: Cards */}
                 <div className="grid grid-cols-1 gap-4 md:hidden">
-                    {products.data.length === 0 ? (
+                    {webproducts.data.length === 0 ? (
                         <div className="text-center py-6">
-                            <p className="text-muted-foreground">No se encontraron productos</p>
+                            <p className="text-muted-foreground">No se encontraron productos web</p>
                         </div>
                     ) : (
-                        products.data.map((product) => (
-                            <Card key={product.id}>
+                        webproducts.data.map((webproduct) => (
+                            <Card key={webproduct.id}>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-lg font-bold">
-                                        {product.name}
+                                        {webproduct.name}
                                     </CardTitle>
-                                    <span
-                                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                            product.active
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                        }`}
-                                    >
-                                        {product.active ? 'Activo' : 'Inactivo'}
-                                    </span>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2">
-                                        <p className="text-sm text-muted-foreground">
-                                            {truncateText(product.description)}
-                                        </p>
-                                    </div>
-                                </CardContent>
                                 <CardFooter className="flex justify-end gap-2">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button
                                                 variant="yellow"
                                                 size="sm"
-                                                onClick={() => openEditModal(product)}
+                                                onClick={() => openEditModal(webproduct)}
                                             >
                                                 <Edit className="h-4 w-4" />
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>Editar producto</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="cian"
-                                                size="sm"
-                                                onClick={() => router.get(`/products/${product.id}/webproducts`)}
-                                            >
-                                                <Globe className="h-4 w-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Ver Productos Web</p>
+                                            <p>Editar producto web</p>
                                         </TooltipContent>
                                     </Tooltip>
                                     <Tooltip>
@@ -259,13 +242,13 @@ export default function Index({ products, filters }: Props) {
                                             <Button
                                                 variant="destructive"
                                                 size="sm"
-                                                onClick={() => handleDelete(product.id, product.name)}
+                                                onClick={() => handleDelete(webproduct.id, webproduct.name)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>Eliminar producto</p>
+                                            <p>Eliminar producto web</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </CardFooter>
@@ -281,36 +264,24 @@ export default function Index({ products, filters }: Props) {
                             <TableRow>
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Descripción</TableHead>
-                                <TableHead>Estado</TableHead>
                                 <TableHead className="w-[100px] text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {products.data.length === 0 ? (
+                            {webproducts.data.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={4}
+                                        colSpan={3}
                                         className="text-center py-6"
                                     >
-                                        No se encontraron productos
+                                        No se encontraron productos web
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                products.data.map((product) => (
-                                    <TableRow key={product.id}>
-                                        <TableCell>{product.name}</TableCell>
-                                        <TableCell>{truncateText(product.description)}</TableCell>
-                                        <TableCell>
-                                            <span
-                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                                    product.active
-                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                                }`}
-                                            >
-                                                {product.active ? 'Activo' : 'Inactivo'}
-                                            </span>
-                                        </TableCell>
+                                webproducts.data.map((webproduct) => (
+                                    <TableRow key={webproduct.id}>
+                                        <TableCell>{webproduct.name}</TableCell>
+                                        <TableCell>{webproduct.description || '-'}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
                                                 <Tooltip>
@@ -318,27 +289,13 @@ export default function Index({ products, filters }: Props) {
                                                         <Button
                                                             variant="ghostYellow"
                                                             size="icon"
-                                                            onClick={() => openEditModal(product)}
+                                                            onClick={() => openEditModal(webproduct)}
                                                         >
-                                                            <Edit className="size-4" />
+                                                            <Edit className="h-4 w-4" />
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        <p>Editar producto</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => router.get(`/products/${product.id}/webproducts`)}
-                                                        >
-                                                            <Globe className="size-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Ver Productos Web</p>
+                                                        <p>Editar producto web</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                                 <Tooltip>
@@ -346,13 +303,13 @@ export default function Index({ products, filters }: Props) {
                                                         <Button
                                                             variant="ghostRed"
                                                             size="icon"
-                                                            onClick={() => handleDelete(product.id, product.name)}
+                                                            onClick={() => handleDelete(webproduct.id, webproduct.name)}
                                                         >
-                                                            <Trash2 className="size-4" />
+                                                            <Trash2 className="h-4 w-4" />
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        <p>Eliminar producto</p>
+                                                        <p>Eliminar producto web</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </div>
@@ -365,23 +322,23 @@ export default function Index({ products, filters }: Props) {
                 </div>
 
                 {/* Paginación */}
-                {products.data.length > 0 && (
+                {webproducts.data.length > 0 && (
                     <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div className="text-sm text-muted-foreground">
-                            Mostrando {products.from} a {products.to} de {products.total} registros
+                            Mostrando {webproducts.from} a {webproducts.to} de {webproducts.total} registros
                         </div>
-                        <Pagination links={products.links} className="mt-0" />
+                        <Pagination links={webproducts.links} className="mt-0" />
                     </div>
                 )}
-
-                {/* Modal de creación/edición */}
-                <ProductModal
-                    isOpen={isModalOpen}
-                    onClose={closeModal}
-                    product={selectedProduct}
-                    size={modalSize}
-                />
             </div>
+
+            <WebproductModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                webproduct={selectedWebproduct}
+                size={modalSize}
+                product_id={product.id}
+            />
         </AppLayout>
     );
 }
