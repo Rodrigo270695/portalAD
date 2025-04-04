@@ -59,6 +59,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
     Route::get('sales/bulk/template', [SaleController::class, 'downloadTemplate'])->name('sales.bulk.template');
     Route::post('sales/bulk/upload', [SaleController::class, 'upload'])->name('sales.bulk.upload');
+    Route::get('sales/template', [SaleController::class, 'downloadTemplate'])->name('sales.template');
+    Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
+    Route::post('sales/upload', [SaleController::class, 'upload'])->name('sales.upload');
     Route::resource('sales', SaleController::class);
 });
 

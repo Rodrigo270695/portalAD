@@ -61,8 +61,13 @@ interface SaleModalProps {
     webProducts: WebProduct[];
 }
 
-const clusterQualities = ['A+', 'A', 'B', 'C'];
-const actions = ['REGULAR', 'PREMIUM'];
+const getLimaDate = () => {
+    const date = new Date();
+    return new Date(date.toLocaleString('en-US', { timeZone: 'America/Lima' })).toISOString().split('T')[0];
+};
+
+const clusterQualities = ['Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado', 'Cluster 3: IMEI en 2 alta', 'Cluster 4: IMEI sospechoso', 'Cluster 5: Sin trafico', 'PENDIENTE CLUSTERIZAR'];
+const actions = ['MULTIMARCA', 'PDV PREMIUM', 'PDV REGULAR', 'NO GESTIONABLE'];
 
 const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: SaleModalProps) => {
     const isEditing = !!sale;
@@ -78,13 +83,13 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
         user_id: number;
         webproduct_id: number;
     }>({
-        date: new Date().toISOString().split('T')[0],
-        cluster_quality: 'A',
-        recharge_date: new Date().toISOString().split('T')[0],
+        date: getLimaDate(),
+        cluster_quality: '',
+        recharge_date: getLimaDate(),
         recharge_amount: '',
         accumulated_amount: '',
         commissionable_charge: true,
-        action: 'REGULAR',
+        action: '',
         user_id: users[0]?.id || 0,
         webproduct_id: webProducts[0]?.id || 0,
     });
@@ -92,13 +97,13 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
     useEffect(() => {
         if (isOpen) {
             setData({
-                date: sale?.date || new Date().toISOString().split('T')[0],
-                cluster_quality: sale?.cluster_quality || 'A',
-                recharge_date: sale?.recharge_date || new Date().toISOString().split('T')[0],
-                recharge_amount: sale?.recharge_amount.toString() || '',
-                accumulated_amount: sale?.accumulated_amount.toString() || '',
+                date: sale?.date || getLimaDate(),
+                cluster_quality: sale?.cluster_quality || '',
+                recharge_date: sale?.recharge_date || getLimaDate(),
+                recharge_amount: sale?.recharge_amount?.toString() || '',
+                accumulated_amount: sale?.accumulated_amount?.toString() || '',
                 commissionable_charge: sale?.commissionable_charge ?? true,
-                action: sale?.action || 'REGULAR',
+                action: sale?.action || '',
                 user_id: sale?.user_id || users[0]?.id || 0,
                 webproduct_id: sale?.webproduct_id || webProducts[0]?.id || 0,
             });
@@ -115,6 +120,9 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
         const url = isEditing ? `/sales/${sale.id}` : '/sales';
 
         submitForm(url, {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['sales', 'filters', 'totals'],
             onSuccess: () => {
                 toast.success({
                     title: isEditing ? "Venta actualizada" : "Venta creada",
@@ -173,8 +181,8 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
 
                         <div className="col-span-1">
                             <div className="mb-1">
-                                <Label htmlFor="recharge_date" className={classNames({ 'text-destructive': errors.recharge_date })} required>
-                                    Fecha de Recarga
+                                <Label htmlFor="recharge_date" className={classNames({ 'text-destructive': errors.recharge_date })}>
+                                    Fecha de Recarga (Opcional)
                                 </Label>
                             </div>
                             <div className="relative">
@@ -198,8 +206,8 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="col-span-1">
                             <div className="mb-1">
-                                <Label htmlFor="cluster_quality" className={classNames({ 'text-destructive': errors.cluster_quality })} required>
-                                    Calidad de Cluster
+                                <Label htmlFor="cluster_quality" className={classNames({ 'text-destructive': errors.cluster_quality })}>
+                                    Calidad de Cluster (Opcional)
                                 </Label>
                             </div>
                             <div className="relative">
@@ -211,7 +219,7 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
                                     onValueChange={(value) => setData('cluster_quality', value)}
                                 >
                                     <SelectTrigger className={classNames('pl-10', { 'border-destructive': errors.cluster_quality })}>
-                                        <SelectValue placeholder="Seleccione calidad" />
+                                        <SelectValue placeholder="Seleccione un cluster" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {clusterQualities.map((quality) => (
@@ -229,8 +237,8 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
 
                         <div className="col-span-1">
                             <div className="mb-1">
-                                <Label htmlFor="action" className={classNames({ 'text-destructive': errors.action })} required>
-                                    Acción
+                                <Label htmlFor="action" className={classNames({ 'text-destructive': errors.action })}>
+                                    Acción (Opcional)
                                 </Label>
                             </div>
                             <div className="relative">
@@ -242,7 +250,7 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
                                     onValueChange={(value) => setData('action', value)}
                                 >
                                     <SelectTrigger className={classNames('pl-10', { 'border-destructive': errors.action })}>
-                                        <SelectValue placeholder="Seleccione acción" />
+                                        <SelectValue placeholder="Seleccione una acción" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {actions.map((action) => (
@@ -262,8 +270,8 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="col-span-1">
                             <div className="mb-1">
-                                <Label htmlFor="recharge_amount" className={classNames({ 'text-destructive': errors.recharge_amount })} required>
-                                    Monto de Recarga
+                                <Label htmlFor="recharge_amount" className={classNames({ 'text-destructive': errors.recharge_amount })}>
+                                    Monto de Recarga (Opcional)
                                 </Label>
                             </div>
                             <div className="relative">
@@ -287,8 +295,8 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
 
                         <div className="col-span-1">
                             <div className="mb-1">
-                                <Label htmlFor="accumulated_amount" className={classNames({ 'text-destructive': errors.accumulated_amount })} required>
-                                    Monto Acumulado
+                                <Label htmlFor="accumulated_amount" className={classNames({ 'text-destructive': errors.accumulated_amount })}>
+                                    Monto Acumulado (Opcional)
                                 </Label>
                             </div>
                             <div className="relative">
@@ -381,7 +389,7 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
                             checked={data.commissionable_charge}
                             onCheckedChange={(checked: boolean) => setData('commissionable_charge', checked)}
                         />
-                        <Label htmlFor="commissionable_charge">Cargo Comisionable</Label>
+                        <Label htmlFor="commissionable_charge" required>Cargo Comisionable</Label>
                         {errors.commissionable_charge && (
                             <p className="text-sm text-destructive mt-1">{errors.commissionable_charge}</p>
                         )}

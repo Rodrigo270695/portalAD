@@ -21,10 +21,9 @@ class SaleController extends Controller
     public function index(Request $request)
     {
         // Obtener parámetros de la solicitud
-        $search = $request->input('search');
         $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
-        $date = $request->input('date', now()->format('Y-m-d'));
+        $date = $request->input('date', now()->setTimezone('America/Lima')->format('Y-m-d'));
         $query = Sale::with([
             'user.circuit.zonal',
             'user.zonificador.circuit.zonal',
@@ -32,7 +31,7 @@ class SaleController extends Controller
         ]);
 
         // Filtro por fecha
-        if ($date) {
+        if ($date && $date !== '') {
             $query->whereDate('date', $date);
         }
 
@@ -44,19 +43,11 @@ class SaleController extends Controller
             });
         }
 
-        // Filtro por búsqueda general
-        if ($search = $request->search) {
-            $query->where(function($q) use ($search) {
-                $q->whereHas('user', function($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('dni', 'like', "%{$search}%");
-                })->orWhereHas('user.circuit.zonal', function($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('short_name', 'like', "%{$search}%");
-                })->orWhereHas('webProduct', function($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
-                });
-            });
+        // Filtro por comisionable
+        if ($commissionable = $request->commissionable) {
+            if ($commissionable !== 'all') {
+                $query->where('commissionable_charge', $commissionable === 'true');
+            }
         }
 
         // Filtro por Zonificado y Zonal
@@ -70,11 +61,27 @@ class SaleController extends Controller
             });
         }
 
+        // Filtro por producto
+        if ($product = $request->product) {
+            if ($product !== 'all') {
+                $query->whereHas('webproduct', function($q) use ($product) {
+                    $q->where('product_id', $product);
+                });
+            }
+        }
+
+        // Filtro por web producto
+        if ($webproduct = $request->webproduct) {
+            if ($webproduct !== 'all') {
+                $query->where('webproduct_id', $webproduct);
+            }
+        }
+
         // Obtener totales para los filtros actuales
         $totals = [
             'recharge_amount' => $query->sum('recharge_amount'),
             'accumulated_amount' => $query->sum('accumulated_amount'),
-            'commissionable_charges' => $query->where('commissionable_charge', true)->count(),
+            'commissionable_charges' => $query->count(),
         ];
 
         // Paginar los resultados
@@ -101,12 +108,14 @@ class SaleController extends Controller
             'users' => $users,
             'webProducts' => $webProducts,
             'filters' => [
-                'search' => $search,
                 'page' => $page,
                 'per_page' => $perPage,
                 'date' => $date,
                 'pdv' => $pdv,
                 'zonificado' => $zonificado,
+                'product' => $product,
+                'webproduct' => $webproduct,
+                'commissionable' => $commissionable,
             ],
             'dates' => $dates,
             'totals' => $totals,
@@ -118,14 +127,9 @@ class SaleController extends Controller
      */
     public function store(SaleRequest $request)
     {
-        $validated = $request->validated();
-        Sale::create($validated);
+        $sale = Sale::create($request->validated());
 
-        if ($request->wantsJson()) {
-            return response()->json(['message' => 'Venta registrada correctamente']);
-        }
-
-        return to_route('sales.index');
+        return back()->with('success', 'Venta creada correctamente.');
     }
 
     /**
@@ -133,14 +137,9 @@ class SaleController extends Controller
      */
     public function update(SaleRequest $request, Sale $sale)
     {
-        $validated = $request->validated();
-        $sale->update($validated);
+        $sale->update($request->validated());
 
-        if ($request->wantsJson()) {
-            return response()->json(['message' => 'Venta actualizada correctamente']);
-        }
-
-        return to_route('sales.index');
+        return back()->with('success', 'Venta actualizada correctamente.');
     }
 
     /**
@@ -190,70 +189,52 @@ class SaleController extends Controller
     {
         $spreadsheet = new Spreadsheet();
 
-        // Hoja de instrucciones
-        $worksheet = $spreadsheet->getActiveSheet();
-        $worksheet->setTitle('Instrucciones');
+        // Primera hoja: Instrucciones
+        $spreadsheet->getActiveSheet()
+            ->setTitle('Instrucciones')
+            ->setCellValue('A1', 'Instrucciones para la carga masiva de ventas')
+            ->setCellValue('A3', '1. La segunda hoja contiene la plantilla para cargar las ventas.')
+            ->setCellValue('A4', '2. Los campos marcados con (*) son obligatorios.')
+            ->setCellValue('A5', '3. El formato de fecha debe ser DD/MM/YYYY.')
+            ->setCellValue('A6', '4. El DNI del PDV debe existir en el sistema.')
+            ->setCellValue('A7', '5. El ID del producto web debe existir en el sistema.')
+            ->setCellValue('A8', '6. La calidad del cluster debe ser uno de: Cluster 1: IMEI nuevo, Cluster 2: IMEI reutilizado, Cluster 3: IMEI en 2 alta, Cluster 4: IMEI sospechoso, Cluster 5: Sin trafico, PENDIENTE CLUSTERIZAR')
+            ->setCellValue('A9', '7. La acción debe ser una de: MULTIMARCA, PDV PREMIUM, PDV REGULAR, NO GESTIONABLE')
+            ->setCellValue('A10', '8. Los montos deben ser números enteros.')
+            ->setCellValue('A11', '9. El campo comisionable debe ser 1 (Sí) o 0 (No).');
 
-        $instructions = [
-            ['Instrucciones para la carga masiva de ventas:'],
-            [''],
-            ['1. Use la hoja "Ventas" para ingresar los datos'],
-            ['2. No modifique los encabezados de las columnas'],
-            ['3. Todos los campos son obligatorios'],
-            ['4. La fecha debe estar en formato DD/MM/YYYY'],
-            ['5. El DNI debe existir en el sistema'],
-            ['6. Los montos deben ser números enteros positivos'],
-            ['7. La calidad del cluster debe ser una de las siguientes: A+, A, B, C'],
-            ['8. La acción debe ser una de las siguientes: REGULAR, PREMIUM'],
-            ['9. El ID del producto web debe existir en el sistema'],
-        ];
-
-        foreach ($instructions as $index => $row) {
-            $worksheet->fromArray($row, null, 'A' . ($index + 1));
-        }
-
-        // Hoja de ventas
+        // Segunda hoja: Plantilla
         $worksheet = $spreadsheet->createSheet();
-        $worksheet->setTitle('Ventas');
+        $worksheet->setTitle('Plantilla');
 
         // Encabezados
         $headers = [
-            'DNI PDV',
-            'Fecha (DD/MM/YYYY)',
-            'Calidad Cluster',
-            'Fecha Recarga',
-            'Monto Recarga',
-            'Monto Acumulado',
-            'Cargo Comisionable (1=Sí, 0=No)',
-            'Acción',
-            'ID Producto Web',
+            'DNI PDV (*)',
+            'Fecha (*)',
+            'Calidad Cluster (*)',
+            'Fecha Recarga (*)',
+            'Monto Recarga (*)',
+            'Monto Acumulado (*)',
+            'Comisionable (*)',
+            'Acción (*)',
+            'ID Producto Web (*)',
         ];
 
-        $worksheet->fromArray([$headers], null, 'A1');
+        // Establecer encabezados
+        foreach ($headers as $col => $header) {
+            $worksheet->setCellValue(chr(65 + $col) . '1', $header);
+        }
 
-        // Ejemplo
-        $example = [
-            '12345678',
-            date('d/m/Y'),
-            'A',
-            date('d/m/Y'),
-            '100',
-            '500',
-            '1',
-            'REGULAR',
-            '1',
-        ];
-
-        $worksheet->fromArray([$example], null, 'A2');
-
-        // Dar formato
+        // Ajustar ancho de columnas
         foreach (range('A', 'I') as $col) {
             $worksheet->getColumnDimension($col)->setAutoSize(true);
         }
 
+        // Crear el archivo
         $writer = new Xlsx($spreadsheet);
-        $filename = 'plantilla_ventas.xlsx';
+        $filename = 'plantilla_carga_ventas.xlsx';
 
+        // Descargar
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
@@ -267,12 +248,12 @@ class SaleController extends Controller
      */
     public function upload(Request $request)
     {
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
-        ]);
-
         try {
             $file = $request->file('file');
+            if (!$file) {
+                throw new \Exception('No se ha seleccionado ningún archivo');
+            }
+
             $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
             $spreadsheet = $reader->load($file->getPathname());
             $worksheet = $spreadsheet->getSheet(1); // Hoja de ventas
@@ -322,18 +303,24 @@ class SaleController extends Controller
                     }
 
                     // Validar calidad del cluster
-                    if (!in_array($clusterQuality, ['A+', 'A', 'B', 'C'])) {
+                    $validClusters = ['Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado', 'Cluster 3: IMEI en 2 alta', 'Cluster 4: IMEI sospechoso', 'Cluster 5: Sin trafico', 'PENDIENTE CLUSTERIZAR'];
+                    if (!in_array($clusterQuality, $validClusters)) {
                         throw new \Exception('Calidad del cluster no válida');
                     }
 
-                    // Validar montos
-                    if ($rechargeAmount < 0 || $accumulatedAmount < 0) {
-                        throw new \Exception('Los montos deben ser positivos');
+                    // Validar acción
+                    $validActions = ['MULTIMARCA', 'PDV PREMIUM', 'PDV REGULAR', 'NO GESTIONABLE'];
+                    if (!in_array($action, $validActions)) {
+                        throw new \Exception('Acción no válida');
                     }
 
-                    // Validar acción
-                    if (!in_array($action, ['REGULAR', 'PREMIUM'])) {
-                        throw new \Exception('Acción no válida');
+                    // Validar montos
+                    if (!is_numeric($rechargeAmount) || !is_numeric($accumulatedAmount)) {
+                        throw new \Exception('Los montos deben ser números');
+                    }
+
+                    if ($rechargeAmount < 0 || $accumulatedAmount < 0) {
+                        throw new \Exception('Los montos deben ser positivos');
                     }
 
                     // Crear venta

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import { Edit, Plus, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import SaleModal, { type Sale } from './SaleModal';
@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useDebounce } from '@/hooks/useDebounce';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
+import { Calendar } from 'lucide-react';
 
 interface Circuit {
     id: number;
@@ -88,22 +89,26 @@ interface Props {
     users: User[];
     webProducts: WebProduct[];
     filters: {
-        search?: string;
         page?: number;
         per_page?: number;
         date?: string;
         pdv?: string;
         zonificado?: string;
-        cluster_quality?: string;
-        action?: string;
+        product?: string;
+        webproduct?: string;
+        commissionable?: string;
     };
     totals: {
         recharge_amount: number;
         accumulated_amount: number;
         commissionable_charges: number;
     };
-    dates: string[];
 }
+
+const getLimaDate = () => {
+    const date = new Date();
+    return new Date(date.toLocaleString('en-US', { timeZone: 'America/Lima' })).toISOString().split('T')[0];
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -116,43 +121,38 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const clusterQualities = ['A+', 'A', 'B', 'C'];
-const actions = ['REGULAR', 'PREMIUM'];
-
-export default function Index({ sales, users, webProducts, filters, totals, dates }: Props) {
-    const [search, setSearch] = useState(filters.search || '');
+export default function Index({ sales, users, webProducts, filters, totals }: Props) {
     const [perPage, setPerPage] = useState(filters.per_page?.toString() || '10');
-    const [date, setDate] = useState(filters.date || new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(filters.date || getLimaDate());
     const [pdv, setPdv] = useState(filters.pdv || '');
     const [zonificado, setZonificado] = useState(filters.zonificado || '');
-    const [clusterQuality, setClusterQuality] = useState(filters.cluster_quality || '');
-    const [action, setAction] = useState(filters.action || '');
+    const [product, setProduct] = useState(filters.product || 'all');
+    const [webproduct, setWebproduct] = useState(filters.webproduct || 'all');
+    const [commissionable, setCommissionable] = useState(filters.commissionable || 'all');
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSale, setSelectedSale] = useState<Sale | undefined>(undefined);
     const [modalSize, setModalSize] = useState<ModalSize>('md');
     const [selectedSales, setSelectedSales] = useState<number[]>([]);
     const [selectAll, setSelectAll] = useState(false);
 
-    const debouncedSearch = useDebounce(search, 300);
     const debouncedPdv = useDebounce(pdv, 300);
     const debouncedZonificado = useDebounce(zonificado, 300);
 
     useEffect(() => {
         router.reload({
             data: {
-                search: debouncedSearch,
+                commissionable,
                 per_page: perPage,
                 date,
                 pdv: debouncedPdv,
                 zonificado: debouncedZonificado,
-                cluster_quality: clusterQuality,
-                action,
+                product,
+                webproduct,
             },
-            preserveState: true,
-            preserveScroll: true,
             only: ['sales', 'filters', 'totals']
         });
-    }, [debouncedSearch, perPage, date, debouncedPdv, debouncedZonificado, clusterQuality, action]);
+    }, [perPage, date, debouncedPdv, debouncedZonificado, product, webproduct, commissionable]);
 
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
@@ -274,13 +274,12 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                             </Button>
                         )}
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            onClick={() => router.get('/sales/bulk')}
-                            variant="outline"
-                        >
-                            <Upload className="mr-2 h-4 w-4" />
-                            Carga Masiva
+                    <div className="flex justify-end space-x-2">
+                        <Button variant="outline" asChild>
+                            <Link href="/sales/bulk">
+                                <Upload className="mr-2 h-4 w-4" />
+                                Carga Masiva
+                            </Link>
                         </Button>
                         <Button onClick={() => openCreateModal()}>
                             <Plus className="mr-2 h-4 w-4" />
@@ -294,7 +293,11 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                     <Card>
                         <CardHeader>
                             <CardTitle>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                    <div>
+                                        <span className="text-sm text-muted-foreground block">Total de Ventas</span>
+                                        <span className="text-lg font-bold">{sales.total?.toLocaleString() ?? '0'}</span>
+                                    </div>
                                     <div>
                                         <span className="text-sm text-muted-foreground block">Monto de Recargas</span>
                                         <span className="text-lg font-bold">{totals.recharge_amount?.toLocaleString() ?? '0'}</span>
@@ -314,64 +317,18 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                         <div>
                             <Label htmlFor="date">Fecha</Label>
-                            <Select
-                                value={date}
-                                onValueChange={setDate}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccione fecha" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {dates?.map((date) => (
-                                        <SelectItem key={date} value={date || new Date().toISOString().split('T')[0]}>
-                                            {new Date(date).toLocaleDateString('es-ES', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="relative">
+                                <Input
+                                    type="date"
+                                    id="date"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="pl-10"
+                                />
+                                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
                         </div>
-                        <div>
-                            <Label htmlFor="cluster_quality">Calidad de Cluster</Label>
-                            <Select
-                                value={clusterQuality}
-                                onValueChange={setClusterQuality}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccione calidad" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todas</SelectItem>
-                                    {clusterQualities.map((quality) => (
-                                        <SelectItem key={quality} value={quality}>
-                                            {quality}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <Label htmlFor="action">Acción</Label>
-                            <Select
-                                value={action}
-                                onValueChange={setAction}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccione acción" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todas</SelectItem>
-                                    {actions.map((action) => (
-                                        <SelectItem key={action} value={action}>
-                                            {action}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+
                         <div>
                             <Label htmlFor="pdv">PDV</Label>
                             <Input
@@ -391,13 +348,65 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                             />
                         </div>
                         <div>
-                            <Label htmlFor="search">Búsqueda general</Label>
-                            <Input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Buscar..."
-                            />
+                            <Label htmlFor="product">Producto</Label>
+                            <Select
+                                value={product}
+                                onValueChange={setProduct}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione producto" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    {webProducts.reduce((uniqueProducts: Product[], wp) => {
+                                        if (wp.product && !uniqueProducts.some(p => p.id === wp.product?.id)) {
+                                            uniqueProducts.push(wp.product);
+                                        }
+                                        return uniqueProducts;
+                                    }, []).map((product) => (
+                                        <SelectItem key={product.id} value={product.id.toString()}>
+                                            {product.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="webproduct">Web Producto</Label>
+                            <Select
+                                value={webproduct}
+                                onValueChange={setWebproduct}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione web producto" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    {webProducts
+                                        .filter(wp => product === 'all' || wp.product_id.toString() === product)
+                                        .map((webProduct) => (
+                                            <SelectItem key={webProduct.id} value={webProduct.id.toString()}>
+                                                {webProduct.name}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="commissionable">Comisionable</Label>
+                            <Select
+                                value={commissionable}
+                                onValueChange={setCommissionable}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione comisionable" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    <SelectItem value="true">Sí</SelectItem>
+                                    <SelectItem value="false">No</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div>
                             <Label htmlFor="per_page">Registros por página</Label>
@@ -432,22 +441,7 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                                     <CardTitle className="text-lg font-bold">
                                         {new Date(sale.date).toLocaleDateString()}
                                     </CardTitle>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                            sale.cluster_quality === 'A+' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                            sale.cluster_quality === 'A' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                            sale.cluster_quality === 'B' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                            'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                        }`}>
-                                            {sale.cluster_quality}
-                                        </span>
-                                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                            sale.action === 'PREMIUM' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                            'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-                                        }`}>
-                                            {sale.action}
-                                        </span>
-                                    </div>
+
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-2">
@@ -533,8 +527,7 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                                     />
                                 </TableHead>
                                 <TableHead>Fecha</TableHead>
-                                <TableHead>Calidad</TableHead>
-                                <TableHead>Acción</TableHead>
+
                                 <TableHead>PDV</TableHead>
                                 <TableHead>Zonificado</TableHead>
                                 <TableHead>Producto</TableHead>
@@ -548,7 +541,7 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                             {sales.data.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={11}
+                                        colSpan={9}
                                         className="text-center py-6"
                                     >
                                         No se encontraron ventas
@@ -574,24 +567,7 @@ export default function Index({ sales, users, webProducts, filters, totals, date
                                             />
                                         </TableCell>
                                         <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-                                        <TableCell>
-                                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                                sale.cluster_quality === 'A+' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                                sale.cluster_quality === 'A' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                sale.cluster_quality === 'B' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                            }`}>
-                                                {sale.cluster_quality}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                                sale.action === 'PREMIUM' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-                                            }`}>
-                                            {sale.action}
-                                        </span>
-                                        </TableCell>
+
                                         <TableCell>{sale.user.name} ({sale.user.dni})</TableCell>
                                         <TableCell>
                                             {sale.user.zonificador && (
