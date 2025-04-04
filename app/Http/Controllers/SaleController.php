@@ -179,6 +179,9 @@ class SaleController extends Controller
         return Inertia::render('Sale/Bulk', [
             'users' => User::role('pdv')->orderBy('name')->get(['id', 'name', 'dni']),
             'webProducts' => WebProduct::orderBy('name')->get(['id', 'name']),
+            'success' => session('success'),
+            'error' => session('error'),
+            'results' => session('results'),
         ]);
     }
 
@@ -189,52 +192,76 @@ class SaleController extends Controller
     {
         $spreadsheet = new Spreadsheet();
 
-        // Primera hoja: Instrucciones
-        $spreadsheet->getActiveSheet()
-            ->setTitle('Instrucciones')
-            ->setCellValue('A1', 'Instrucciones para la carga masiva de ventas')
-            ->setCellValue('A3', '1. La segunda hoja contiene la plantilla para cargar las ventas.')
-            ->setCellValue('A4', '2. Los campos marcados con (*) son obligatorios.')
-            ->setCellValue('A5', '3. El formato de fecha debe ser DD/MM/YYYY.')
-            ->setCellValue('A6', '4. El DNI del PDV debe existir en el sistema.')
-            ->setCellValue('A7', '5. El ID del producto web debe existir en el sistema.')
-            ->setCellValue('A8', '6. La calidad del cluster debe ser uno de: Cluster 1: IMEI nuevo, Cluster 2: IMEI reutilizado, Cluster 3: IMEI en 2 alta, Cluster 4: IMEI sospechoso, Cluster 5: Sin trafico, PENDIENTE CLUSTERIZAR')
-            ->setCellValue('A9', '7. La acción debe ser una de: MULTIMARCA, PDV PREMIUM, PDV REGULAR, NO GESTIONABLE')
-            ->setCellValue('A10', '8. Los montos deben ser números enteros.')
-            ->setCellValue('A11', '9. El campo comisionable debe ser 1 (Sí) o 0 (No).');
+        // Hoja de instrucciones
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Instrucciones');
+        $sheet->setCellValue('A1', 'Instrucciones para la carga masiva de ventas');
+        $sheet->setCellValue('A3', '1. No modifiques los encabezados de las columnas');
+        $sheet->setCellValue('A4', '2. El DNI debe existir en el sistema');
+        $sheet->setCellValue('A5', '3. La fecha debe estar en formato YYYY-MM-DD');
+        $sheet->setCellValue('A6', '4. El campo comisionable debe ser 1 (Sí) o 0 (No)');
+        $sheet->setCellValue('A7', '5. Los montos deben ser números');
 
-        // Segunda hoja: Plantilla
-        $worksheet = $spreadsheet->createSheet();
-        $worksheet->setTitle('Plantilla');
+        // Hoja de datos
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle('Ventas');
+        $sheet->setCellValue('A1', 'DNI PDV');
+        $sheet->setCellValue('B1', 'Fecha');
+        $sheet->setCellValue('C1', 'Calidad Cluster');
+        $sheet->setCellValue('D1', 'Fecha Recarga');
+        $sheet->setCellValue('E1', 'Monto Recarga');
+        $sheet->setCellValue('F1', 'Monto Acumulado');
+        $sheet->setCellValue('G1', 'Comisionable');
+        $sheet->setCellValue('H1', 'Acción');
+        $sheet->setCellValue('I1', 'Producto Web');
 
-        // Encabezados
-        $headers = [
-            'DNI PDV (*)',
-            'Fecha (*)',
-            'Calidad Cluster (*)',
-            'Fecha Recarga (*)',
-            'Monto Recarga (*)',
-            'Monto Acumulado (*)',
-            'Comisionable (*)',
-            'Acción (*)',
-            'ID Producto Web (*)',
-        ];
-
-        // Establecer encabezados
-        foreach ($headers as $col => $header) {
-            $worksheet->setCellValue(chr(65 + $col) . '1', $header);
-        }
-
-        // Ajustar ancho de columnas
+        // Dar formato a los encabezados y ajustar ancho
         foreach (range('A', 'I') as $col) {
-            $worksheet->getColumnDimension($col)->setAutoSize(true);
+            $sheet->getStyle($col . '1')->applyFromArray([
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E8E8E8']
+                ]
+            ]);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Crear el archivo
-        $writer = new Xlsx($spreadsheet);
-        $filename = 'plantilla_carga_ventas.xlsx';
+        // Hoja de referencia
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle('Referencias');
 
-        // Descargar
+        // DNIs válidos
+        $sheet->setCellValue('A1', 'DNIs Válidos');
+        $sheet->setCellValue('A2', 'DNI');
+        $sheet->setCellValue('B2', 'Nombre');
+        $sheet->setCellValue('C2', 'Zonal');
+
+        $row = 3;
+        $users = User::role('pdv')
+            ->with('circuit.zonal')
+            ->get();
+
+        foreach ($users as $user) {
+            $sheet->setCellValue('A' . $row, $user->dni);
+            $sheet->setCellValue('B' . $row, $user->name);
+            $sheet->setCellValue('C' . $row, $user->circuit?->zonal->short_name);
+            $row++;
+        }
+
+        // Productos Web válidos
+        $row += 2;
+        $sheet->setCellValue('A' . $row, 'Productos Web Válidos');
+        $row++;
+        $products = WebProduct::pluck('name');
+        foreach ($products as $product) {
+            $sheet->setCellValue('A' . $row, $product);
+            $row++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'plantilla_ventas.xlsx';
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
@@ -248,12 +275,12 @@ class SaleController extends Controller
      */
     public function upload(Request $request)
     {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
+        ]);
+
         try {
             $file = $request->file('file');
-            if (!$file) {
-                throw new \Exception('No se ha seleccionado ningún archivo');
-            }
-
             $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
             $spreadsheet = $reader->load($file->getPathname());
             $worksheet = $spreadsheet->getSheet(1); // Hoja de ventas
@@ -275,65 +302,67 @@ class SaleController extends Controller
                 $rowNumber = $index + 2;
 
                 try {
-                    $dni = $row[0];
-                    $date = \DateTime::createFromFormat('d/m/Y', $row[1]);
-                    $clusterQuality = $row[2];
-                    $rechargeDate = \DateTime::createFromFormat('d/m/Y', $row[3]);
-                    $rechargeAmount = $row[4];
-                    $accumulatedAmount = $row[5];
-                    $commissionableCharge = (bool)$row[6];
-                    $action = $row[7];
-                    $webProductId = $row[8];
+                    // Extraer datos requeridos
+                    $dni = trim($row[0]);
+                    $date = trim($row[1]);
+                    $webProductName = trim($row[8]);
+                    $commissionableCharge = $row[6];
 
-                    // Validar datos básicos
-                    if (!$dni || !$date || !$clusterQuality || !$rechargeDate || !$rechargeAmount || !$accumulatedAmount || !$webProductId) {
-                        throw new \Exception('Faltan datos requeridos');
+                    // Validar campos requeridos
+                    if (!$dni || !$date || !$webProductName || !isset($commissionableCharge)) {
+                        throw new \Exception('Faltan campos requeridos (DNI, Fecha, Producto Web o Comisionable)');
                     }
 
-                    // Buscar usuario por DNI
+                    // Validar DNI
                     $user = User::where('dni', $dni)->first();
                     if (!$user) {
                         throw new \Exception('DNI no encontrado en el sistema');
                     }
 
+                    // Validar fecha
+                    $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+                    if (!$dateObj) {
+                        throw new \Exception('Formato de fecha inválido, debe ser YYYY-MM-DD');
+                    }
+
                     // Validar producto web
-                    $webProduct = WebProduct::find($webProductId);
+                    $webProduct = WebProduct::where('name', $webProductName)->first();
                     if (!$webProduct) {
                         throw new \Exception('Producto web no encontrado');
                     }
 
-                    // Validar calidad del cluster
-                    $validClusters = ['Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado', 'Cluster 3: IMEI en 2 alta', 'Cluster 4: IMEI sospechoso', 'Cluster 5: Sin trafico', 'PENDIENTE CLUSTERIZAR'];
-                    if (!in_array($clusterQuality, $validClusters)) {
-                        throw new \Exception('Calidad del cluster no válida');
+                    // Validar comisionable
+                    if (!in_array($commissionableCharge, ['0', '1', 0, 1])) {
+                        throw new \Exception('El campo comisionable debe ser 0 o 1');
                     }
 
-                    // Validar acción
-                    $validActions = ['MULTIMARCA', 'PDV PREMIUM', 'PDV REGULAR', 'NO GESTIONABLE'];
-                    if (!in_array($action, $validActions)) {
-                        throw new \Exception('Acción no válida');
+                    // Validar campos opcionales con formato
+                    $rechargeDate = !empty($row[3]) ? \DateTime::createFromFormat('Y-m-d', trim($row[3])) : null;
+                    if (!empty($row[3]) && !$rechargeDate) {
+                        throw new \Exception('Formato de fecha de recarga inválido, debe ser YYYY-MM-DD');
                     }
 
-                    // Validar montos
-                    if (!is_numeric($rechargeAmount) || !is_numeric($accumulatedAmount)) {
-                        throw new \Exception('Los montos deben ser números');
+                    $rechargeAmount = !empty($row[4]) ? trim($row[4]) : null;
+                    if ($rechargeAmount !== null && !is_numeric($rechargeAmount)) {
+                        throw new \Exception('El monto de recarga debe ser un número');
                     }
 
-                    if ($rechargeAmount < 0 || $accumulatedAmount < 0) {
-                        throw new \Exception('Los montos deben ser positivos');
+                    $accumulatedAmount = !empty($row[5]) ? trim($row[5]) : null;
+                    if ($accumulatedAmount !== null && !is_numeric($accumulatedAmount)) {
+                        throw new \Exception('El monto acumulado debe ser un número');
                     }
 
                     // Crear venta
                     Sale::create([
                         'user_id' => $user->id,
-                        'date' => $date->format('Y-m-d'),
-                        'cluster_quality' => $clusterQuality,
-                        'recharge_date' => $rechargeDate->format('Y-m-d'),
+                        'date' => $dateObj->format('Y-m-d'),
+                        'cluster_quality' => !empty($row[2]) ? trim($row[2]) : null,
+                        'recharge_date' => $rechargeDate ? $rechargeDate->format('Y-m-d') : null,
                         'recharge_amount' => $rechargeAmount,
                         'accumulated_amount' => $accumulatedAmount,
-                        'commissionable_charge' => $commissionableCharge,
-                        'action' => $action,
-                        'webproduct_id' => $webProductId,
+                        'commissionable_charge' => (bool)$commissionableCharge,
+                        'action' => !empty($row[7]) ? trim($row[7]) : null,
+                        'webproduct_id' => $webProduct->id, // Usar el ID del producto web encontrado
                     ]);
 
                     $results['success']++;
@@ -347,14 +376,33 @@ class SaleController extends Controller
 
             if (empty($results['errors'])) {
                 DB::commit();
-                return redirect()->back()->with('success', 'Se importaron ' . $results['success'] . ' ventas correctamente');
+                return redirect()->back()
+                    ->with([
+                        'success' => 'Se importaron ' . $results['success'] . ' ventas correctamente',
+                        'results' => $results
+                    ]);
             } else {
                 DB::rollBack();
-                return redirect()->back()->with('error', 'Se encontraron errores en la importación')->with('results', $results);
+                return redirect()->back()
+                    ->with([
+                        'error' => 'Se encontraron errores en la importación',
+                        'results' => $results
+                    ]);
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Error al procesar el archivo: ' . $e->getMessage());
+            return redirect()->back()
+                ->with([
+                    'error' => 'Error al procesar el archivo: ' . $e->getMessage(),
+                    'results' => [
+                        'total' => 0,
+                        'success' => 0,
+                        'errors' => [[
+                            'row' => 0,
+                            'message' => $e->getMessage()
+                        ]]
+                    ]
+                ]);
         }
     }
 }

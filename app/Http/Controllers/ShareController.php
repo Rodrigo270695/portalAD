@@ -335,14 +335,33 @@ class ShareController extends Controller
 
             if (empty($results['errors'])) {
                 DB::commit();
-                return redirect()->back()->with('success', 'Se importaron ' . $results['success'] . ' cuotas correctamente');
+                return redirect()->back()
+                    ->with([
+                        'success' => 'Se importaron ' . $results['success'] . ' cuotas correctamente',
+                        'results' => $results
+                    ]);
             } else {
                 DB::rollBack();
-                return redirect()->back()->with('error', 'Se encontraron errores en la importación')->with('results', $results);
+                return redirect()->back()
+                    ->with([
+                        'error' => 'Se encontraron errores en la importación',
+                        'results' => $results
+                    ]);
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Error al procesar el archivo: ' . $e->getMessage());
+            return redirect()->back()
+                ->with([
+                    'error' => 'Error al procesar el archivo: ' . $e->getMessage(),
+                    'results' => [
+                        'total' => 0,
+                        'success' => 0,
+                        'errors' => [[
+                            'row' => 0,
+                            'message' => $e->getMessage()
+                        ]]
+                    ]
+                ]);
         }
     }
 }

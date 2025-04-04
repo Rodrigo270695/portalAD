@@ -143,7 +143,7 @@ export default function Bulk() {
                             </ul>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-center w-full">
-                                    <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                                    <label className="flex flex-col items-center justify-center w-full h-34 border-2 border-dashed rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800">
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <Upload className="w-8 h-8 mb-4 text-neutral-500" />
                                             <p className="mb-2 text-sm text-neutral-500">
@@ -230,15 +230,15 @@ export default function Bulk() {
                     </Dialog>
 
                     {/* Modal de Progreso */}
-                    <Dialog open={showProgress} onOpenChange={() => {}}>
+                    <Dialog open={showProgress} onOpenChange={() => { }}>
                         <DialogContent className="sm:max-w-md bg-gradient-to-b from-white to-neutral-50 dark:from-neutral-900 dark:to-neutral-800">
                             <DialogHeader className="pb-6">
                                 <DialogTitle className="flex items-center gap-3 text-xl">
-                                    {isProcessing ? (
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative">
-                                                <div className="absolute inset-0 rounded-full bg-[#00B8D9]/20 dark:bg-[#00B8D9]/40 animate-ping opacity-75"></div>
-                                                <Loader2 className="h-6 w-6 animate-spin text-[#0062CC] dark:text-[#00B8D9] relative" />
+                                {isProcessing ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <div className="relative h-8 w-8 flex items-center justify-center">
+                                                <div className="absolute inset-0 rounded-full bg-[#00B8D9]/20 dark:bg-[#00B8D9]/40 animate-pulse opacity-75"></div>
+                                                <Loader2 className="h-6 w-6 text-[#0062CC] dark:text-[#00B8D9] relative animate-spin" />
                                             </div>
                                             <span className="bg-gradient-to-r from-[#0062CC] to-[#00B8D9] text-transparent bg-clip-text font-semibold">
                                                 Procesando archivo

@@ -208,7 +208,7 @@ export default function UserModal({ isOpen, onClose, user, size = 'lg', circuits
 
                             <div>
                                 <div className="mb-1">
-                                    <Label htmlFor="email" className={classNames({ 'text-destructive': errors.email })} required>
+                                    <Label htmlFor="email" className={classNames({ 'text-destructive': errors.email })}>
                                         Correo Electrónico
                                     </Label>
                                 </div>
