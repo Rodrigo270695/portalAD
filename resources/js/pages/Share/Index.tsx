@@ -350,15 +350,6 @@ export default function Index({ shares, users, filters, years, total }: Props) {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-                        <Input
-                            placeholder="Buscar cuotas..."
-                            className="pl-10"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
                     <div className="w-full sm:w-48">
                         <Select
                             value={perPage}

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ShareRequest;
 use App\Models\Share;
 use App\Models\User;
+use App\Models\Circuit;
 use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -199,10 +201,10 @@ class ShareController extends Controller
         $sheet->setTitle('Instrucciones');
         $sheet->setCellValue('A1', 'Instrucciones para la carga masiva de cuotas');
         $sheet->setCellValue('A3', '1. No modifiques los encabezados de las columnas');
-        $sheet->setCellValue('A4', '2. El DNI debe existir en el sistema');
+        $sheet->setCellValue('A4', '2. Si el DNI no existe, se creará un usuario automáticamente con el circuito SINNOMBRE');
         $sheet->setCellValue('A5', '3. El año debe ser entre 2000 y el próximo año');
         $sheet->setCellValue('A6', '4. El mes debe ser entre 1 y 12');
-        $sheet->setCellValue('A7', '5. El monto debe ser un número entero positivo');
+        $sheet->setCellValue('A7', '5. El monto debe ser un número mayor o igual a cero (si está vacío se asignará 0, los espacios serán eliminados)');
         $sheet->setCellValue('A8', '6. No puede haber dos cuotas para el mismo PDV en el mismo mes y año');
 
         // Hoja de datos
@@ -266,6 +268,7 @@ class ShareController extends Controller
                 'total' => 0,
                 'success' => 0,
                 'errors' => [],
+                'usersCreated' => [], // Lista de usuarios creados
             ];
 
             DB::beginTransaction();
@@ -275,20 +278,52 @@ class ShareController extends Controller
                 $rowNumber = $index + 2;
 
                 try {
-                    $dni = $row[0];
-                    $year = $row[1];
-                    $month = $row[2];
-                    $amount = $row[3];
+                    // Limpiar espacios en todos los campos
+                    $dni = trim($row[0]);
+                    $year = trim($row[1]);
+                    $month = trim($row[2]);
+                    $amount = trim($row[3]);
+
+                    // Asegurar que el DNI tenga 8 dígitos (después de limpiar espacios)
+                    $dni = str_pad($dni, 8, '0', STR_PAD_LEFT);
+
+                    // Si el monto está vacío, asignar 0
+                    if ($amount === null || $amount === '') {
+                        $amount = 0;
+                    }
 
                     // Validar datos básicos
-                    if (!$dni || !$year || !$month || !$amount) {
-                        throw new \Exception('Faltan datos requeridos');
+                    if (!$dni || !$year || !$month) {
+                        throw new \Exception('Faltan datos requeridos (DNI, año o mes)');
                     }
 
                     // Buscar usuario por DNI
                     $user = User::where('dni', $dni)->first();
                     if (!$user) {
-                        throw new \Exception('DNI no encontrado en el sistema');
+                        // Buscar el circuito SINNOMBRE
+                        $circuit = Circuit::where('name', 'SINNOMBRE')->first();
+                        if (!$circuit) {
+                            throw new \Exception('No se encontró el circuito SINNOMBRE');
+                        }
+
+                        // Crear nuevo usuario
+                        $user = User::create([
+                            'name' => 'sin nombre',
+                            'email' => null,
+                            'dni' => $dni,
+                            'password' => Hash::make($dni),
+                            'cel' => '999999999',
+                            'circuit_id' => $circuit->id,
+                        ]);
+
+                        // Asignar el rol pdv
+                        $user->assignRole('pdv');
+
+                        // Agregar a la lista de usuarios creados
+                        $results['usersCreated'][] = [
+                            'dni' => $dni,
+                            'row' => $rowNumber
+                        ];
                     }
 
                     // Validar año
@@ -302,8 +337,8 @@ class ShareController extends Controller
                     }
 
                     // Validar monto
-                    if ($amount < 0) {
-                        throw new \Exception('Monto no válido');
+                    if (!is_numeric($amount) || $amount < 0) {
+                        throw new \Exception('Monto no válido (debe ser mayor o igual a cero)');
                     }
 
                     // Validar duplicados
@@ -335,9 +370,13 @@ class ShareController extends Controller
 
             if (empty($results['errors'])) {
                 DB::commit();
+                $message = 'Se importaron ' . $results['success'] . ' cuotas correctamente';
+                if (!empty($results['usersCreated'])) {
+                    $message .= '. Se crearon ' . count($results['usersCreated']) . ' usuarios nuevos';
+                }
                 return redirect()->back()
                     ->with([
-                        'success' => 'Se importaron ' . $results['success'] . ' cuotas correctamente',
+                        'success' => $message,
                         'results' => $results
                     ]);
             } else {

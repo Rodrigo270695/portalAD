@@ -32,6 +32,7 @@ interface Props {
         total: number;
         success: number;
         errors: { row: number; message: string }[];
+        usersCreated: { dni: string; row: number }[];
     };
 }
 
@@ -217,6 +218,22 @@ export default function Bulk() {
                                                         {results.errors.map((error, index) => (
                                                             <li key={index}>
                                                                 Fila {error.row}: {error.message}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </AlertDescription>
+                                            </Alert>
+                                        )}
+
+                                        {results.usersCreated && results.usersCreated.length > 0 && (
+                                            <Alert>
+                                                <CheckCircle className="h-4 w-4" />
+                                                <AlertTitle>Usuarios Creados Automáticamente</AlertTitle>
+                                                <AlertDescription>
+                                                    <ul className="mt-2 list-inside list-disc space-y-1 max-h-[40vh] overflow-y-auto pr-2">
+                                                        {results.usersCreated.map((user, index) => (
+                                                            <li key={index}>
+                                                                Fila {user.row}: DNI {user.dni}
                                                             </li>
                                                         ))}
                                                     </ul>

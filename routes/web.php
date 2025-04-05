@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('zonals', ZonalController::class);
     Route::resource('circuits', CircuitController::class);
     Route::resource('users', UserController::class);
+    Route::post('users/bulk/create', [UserController::class, 'bulkCreate'])->name('users.bulk.create');
     Route::resource('products', ProductController::class);
     Route::resource('sellers', SellerController::class)->except(['index', 'show', 'create', 'edit']);
 

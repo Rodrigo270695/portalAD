@@ -31,7 +31,7 @@ interface Props {
     results?: {
         total: number;
         success: number;
-        errors: { row: number; message: string }[];
+        errors: { row: number; message: string; dni?: string }[];
     };
 }
 
@@ -42,6 +42,7 @@ export default function Bulk() {
     const [showResults, setShowResults] = useState(false);
     const [showProgress, setShowProgress] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     useEffect(() => {
         if (success || error || results) {
@@ -53,12 +54,44 @@ export default function Bulk() {
         window.location.href = '/sales/bulk/template';
     };
 
+    const handleCreateUsers = () => {
+        if (!results?.errors) return;
+
+        const dnis = results.errors
+            .filter(error => error.dni)
+            .map(error => error.dni);
+
+        if (dnis.length === 0) return;
+
+        router.post('/users/bulk/create', 
+            { dnis },
+            {
+                onSuccess: () => {
+                    if (selectedFile) {
+                        uploadFile(selectedFile, false);
+                    }
+                },
+                onError: (errors) => {
+                    console.error('Error creating users:', errors);
+                }
+            }
+        );
+    };
+
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
+        setSelectedFile(file);
+        uploadFile(file);
+    };
+
+    const uploadFile = (file: File, onlySuccessful: boolean = false) => {
         const formData = new FormData();
         formData.append('file', file);
+        if (onlySuccessful) {
+            formData.append('only_successful', 'true');
+        }
 
         setUploading(true);
         setProgress(0);
@@ -74,7 +107,6 @@ export default function Bulk() {
                 }
             },
             onSuccess: () => {
-                event.target.value = '';
                 setUploading(false);
                 setProgress(100);
                 setIsProcessing(true);
@@ -84,7 +116,6 @@ export default function Bulk() {
                 }, 1000);
             },
             onError: () => {
-                event.target.value = '';
                 setUploading(false);
                 setProgress(0);
                 setShowProgress(false);
@@ -178,7 +209,26 @@ export default function Bulk() {
                             <DialogHeader>
                                 <DialogTitle>Resultados de la Importación</DialogTitle>
                             </DialogHeader>
-                            <div className="space-y-4 overflow-y-auto">
+                            <div className="space-y-4 overflow-y-auto px-6">
+                                {results && results.errors.length > 0 && (
+                                    <div className="flex flex-col sm:flex-row gap-2 -mx-2 mb-4">
+                                        <Button
+                                            onClick={handleCreateUsers}
+                                            variant="outline"
+                                            className="flex-1 h-auto py-2 text-xs sm:text-sm font-medium bg-white hover:bg-neutral-50 dark:bg-neutral-900 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 whitespace-normal text-center min-h-[2.5rem]"
+                                        >
+                                            Registrar DNIs no encontrados
+                                        </Button>
+                                        <Button
+                                            onClick={() => selectedFile && uploadFile(selectedFile, true)}
+                                            variant="outline"
+                                            className="flex-1 h-auto py-2 text-xs sm:text-sm font-medium bg-white hover:bg-neutral-50 dark:bg-neutral-900 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 whitespace-normal text-center min-h-[2.5rem]"
+                                        >
+                                            Subir solo registros exitosos
+                                        </Button>
+                                    </div>
+                                )}
+
                                 {success && (
                                     <Alert>
                                         <CheckCircle className="h-4 w-4" />

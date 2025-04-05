@@ -33,6 +33,9 @@ class UserController extends Controller
                     ->orWhere('cel', 'like', "%{$search}%")
                     ->orWhereHas('circuit', function ($query) use ($search) {
                         $query->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('roles', function ($query) use ($search) {
+                        $query->where('name', 'like', "%{$search}%");
                     });
             })
             ->orderBy('name')
@@ -65,6 +68,70 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    public function bulkCreate(Request $request)
+    {
+        $request->validate([
+            'dnis' => ['required', 'array'],
+            'dnis.*' => ['required', 'string', 'min:1', 'max:8'],
+        ]);
+
+        $circuit = Circuit::where('name', 'SINNOMBRE')->first();
+        if (!$circuit) {
+            return response()->json(['message' => 'No se encontró el circuito SINNOMBRE'], 400);
+        }
+
+        $results = [
+            'total' => 0,
+            'success' => 0,
+            'errors' => [],
+        ];
+
+        foreach ($request->dnis as $dni) {
+            $results['total']++;
+            try {
+                // Asegurar que el DNI tenga 8 dígitos
+                $dni = str_pad($dni, 8, '0', STR_PAD_LEFT);
+
+                // Verificar si el usuario ya existe
+                if (User::where('dni', $dni)->exists()) {
+                    throw new \Exception('El usuario ya existe');
+                }
+
+                // Crear el usuario
+                $user = User::create([
+                    'name' => 'sin nombre',
+                    'email' => null,
+                    'dni' => $dni,
+                    'password' => Hash::make($dni),
+                    'cel' => '999999999',
+                    'circuit_id' => $circuit->id,
+                ]);
+
+                // Asignar rol pdv
+                $user->assignRole('pdv');
+
+                $results['success']++;
+            } catch (\Exception $e) {
+                $results['errors'][] = [
+                    'dni' => $dni,
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        if (empty($results['errors'])) {
+            return back()->with([
+                'success' => 'Se crearon ' . $results['success'] . ' usuarios correctamente',
+                'results' => $results
+            ]);
+        } else {
+            return back()->with([
+                'error' => 'Se encontraron errores al crear algunos usuarios',
+                'results' => $results
+            ]);
+        }
+    }
+
     public function store(UserRequest $request)
     {
         $validated = $request->safe()->only([

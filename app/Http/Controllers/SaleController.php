@@ -38,8 +38,15 @@ class SaleController extends Controller
         // Filtro por PDV
         if ($pdv = $request->pdv) {
             $query->whereHas('user', function($q) use ($pdv) {
-                $q->where('name', 'like', "%{$pdv}%")
-                    ->orWhere('dni', 'like', "%{$pdv}%");
+                // Si el pdv parece ser un DNI (solo números), aplicar padding
+                if (is_numeric($pdv)) {
+                    $paddedDni = str_pad($pdv, 8, '0', STR_PAD_LEFT);
+                    $q->where('name', 'like', "%{$pdv}%")
+                        ->orWhere('dni', $paddedDni);
+                } else {
+                    $q->where('name', 'like', "%{$pdv}%")
+                        ->orWhere('dni', 'like', "%{$pdv}%");
+                }
             });
         }
 
@@ -275,19 +282,42 @@ class SaleController extends Controller
      */
     public function upload(Request $request)
     {
+        // Si es solo registros exitosos, validar que el archivo exista en la sesión
+        if ($request->input('only_successful')) {
+            $previousResults = session('original_data');
+            if (!$previousResults || empty($previousResults['rows'])) {
+                return redirect()->back()->with('error', 'No hay resultados previos para procesar');
+            }
+            $rows = collect($previousResults['rows'])
+                ->filter(function ($row, $index) use ($previousResults) {
+                    return !collect($previousResults['results']['errors'])
+                        ->pluck('row')
+                        ->contains($index + 2);
+                })
+                ->values()
+                ->all();
+        }
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
         ]);
 
         try {
-            $file = $request->file('file');
-            $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
-            $spreadsheet = $reader->load($file->getPathname());
-            $worksheet = $spreadsheet->getSheet(1); // Hoja de ventas
-            $rows = $worksheet->toArray();
+            if (!$request->input('only_successful')) {
+                $file = $request->file('file');
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+                $spreadsheet = $reader->load($file->getPathname());
+                $worksheet = $spreadsheet->getSheet(1); // Hoja de ventas
+                $rows = $worksheet->toArray();
 
-            // Remover encabezados
-            array_shift($rows);
+                // Remover encabezados
+                array_shift($rows);
+
+                // Guardar datos originales en la sesión
+                session(['original_data' => [
+                    'rows' => $rows,
+                    'results' => null
+                ]]);
+            }
 
             $results = [
                 'total' => 0,
@@ -303,7 +333,7 @@ class SaleController extends Controller
 
                 try {
                     // Extraer datos requeridos
-                    $dni = trim($row[0]);
+                    $dni = str_pad(trim($row[0]), 8, '0', STR_PAD_LEFT);
                     $date = trim($row[1]);
                     $webProductName = trim($row[8]);
                     $commissionableCharge = $row[6];
@@ -316,7 +346,7 @@ class SaleController extends Controller
                     // Validar DNI
                     $user = User::where('dni', $dni)->first();
                     if (!$user) {
-                        throw new \Exception('DNI no encontrado en el sistema');
+                        throw new \Exception('DNI no encontrado en el sistema: ' . $dni . '|' . $dni);
                     }
 
                     // Validar fecha
@@ -367,15 +397,21 @@ class SaleController extends Controller
 
                     $results['success']++;
                 } catch (\Exception $e) {
-                    $results['errors'][] = [
+                    $error = [
                         'row' => $rowNumber,
                         'message' => $e->getMessage(),
                     ];
+                    $message = $e->getMessage();
+                    if (strpos($message, '|') !== false) {
+                        $error['dni'] = explode('|', $message)[1];
+                    }
+                    $results['errors'][] = $error;
                 }
             }
 
             if (empty($results['errors'])) {
                 DB::commit();
+                session()->forget('original_data');
                 return redirect()->back()
                     ->with([
                         'success' => 'Se importaron ' . $results['success'] . ' ventas correctamente',
@@ -383,6 +419,10 @@ class SaleController extends Controller
                     ]);
             } else {
                 DB::rollBack();
+                // Actualizar los resultados en los datos originales
+                if (!$request->input('only_successful')) {
+                    session()->put('original_data.results', $results);
+                }
                 return redirect()->back()
                     ->with([
                         'error' => 'Se encontraron errores en la importación',

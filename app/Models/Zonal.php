@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Zonal extends Model
 {
@@ -16,6 +17,14 @@ class Zonal extends Model
     protected $casts = [
         'active' => 'boolean',
     ];
+
+    /**
+     * Get the circuits for the zonal.
+     */
+    public function circuits(): HasMany
+    {
+        return $this->hasMany(Circuit::class);
+    }
 
     /**
      * Scope a query to filter zonals by search term.
