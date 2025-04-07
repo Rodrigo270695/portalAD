@@ -71,7 +71,9 @@ export function NavMain({ items = [], collapsed = false }: NavMainProps) {
         const hasChildren = item.children && item.children.length > 0;
         const isActive = hasChildren
             ? item.children?.some(child => page.url.startsWith(child.href || ''))
-            : page.url.startsWith(item.href || '');
+            : item.href === '/sales-history'
+                ? page.url === item.href // Ventas PDV debe coincidir exactamente
+                : page.url.startsWith(item.href || '');
 
         if (hasChildren) {
             return (
@@ -154,7 +156,7 @@ export function NavMain({ items = [], collapsed = false }: NavMainProps) {
                                                 <SidebarMenuItem>
                                                     <SidebarMenuButton
                                                         asChild
-                                                        isActive={page.url.startsWith(child.href || '')}
+                                                        isActive={page.url === child.href}
                                                         tooltip={{ children: child.title, side: "right" }}
                                                         className="transition-colors duration-200 hover:bg-accent/80"
                                                     >

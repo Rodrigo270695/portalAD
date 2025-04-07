@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -28,6 +29,21 @@ class AuthServiceProvider extends ServiceProvider
                 Auth::createUserProvider($config['provider']),
                 $app['session.store']
             );
+        });
+
+        // Define la habilidad 'admin' para usuarios con rol de administrador
+        Gate::define('admin', function ($user) {
+            return $user->hasRole('admin');
+        });
+
+        // Define la habilidad 'admin-qa' para usuarios con rol de admin o qa
+        Gate::define('admin-qa', function ($user) {
+            return $user->hasRole(['admin', 'qa']);
+        });
+
+        // Define la habilidad 'pdv-access' para usuarios con rol de pdv o zonificado
+        Gate::define('pdv-access', function ($user) {
+            return $user->hasRole(['pdv', 'zonificado']);
         });
     }
 }

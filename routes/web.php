@@ -4,12 +4,16 @@ use App\Http\Controllers\CircuitController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SaleHistoryController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TackController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebproductController;
 use App\Http\Controllers\ZonalController;
 use App\Http\Controllers\SellerController;
+use App\Http\Controllers\ErrorController;
+use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -26,44 +30,50 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //    return Inertia::render('dashboard');
     //})->name('dashboard');
 
-    Route::resource('zonals', ZonalController::class);
-    Route::resource('circuits', CircuitController::class);
-    Route::resource('users', UserController::class);
-    Route::post('users/bulk/create', [UserController::class, 'bulkCreate'])->name('users.bulk.create');
-    Route::resource('products', ProductController::class);
-    Route::resource('sellers', SellerController::class)->except(['index', 'show', 'create', 'edit']);
+    // Rutas de error
+    Route::get('/error/access-denied', [ErrorController::class, 'accessDenied'])->name('error.access-denied');
+    Route::get('/error/forbidden', [ErrorController::class, 'forbidden'])->name('error.forbidden');
 
-    // Rutas de Tacks
+    // Rutas administrativas (solo admin)
+    Route::middleware('can:admin')->group(function () {
+        Route::resource('zonals', ZonalController::class);
+        Route::resource('circuits', CircuitController::class);
+        Route::resource('users', UserController::class);
+        Route::post('users/bulk/create', [UserController::class, 'bulkCreate'])->name('users.bulk.create');
+    });
+
+    // Rutas para admin y qa
+    Route::middleware('can:admin-qa')->group(function () {
+        Route::resource('products', ProductController::class);
+        Route::resource('shares', ShareController::class);
+        Route::resource('sales', SaleController::class);
+        Route::delete('shares/bulk-delete', [ShareController::class, 'bulkDestroy'])->name('shares.bulk-destroy');
+        Route::get('shares/bulk', [ShareController::class, 'bulk'])->name('shares.bulk');
+        Route::get('shares/bulk/template', [ShareController::class, 'downloadTemplate'])->name('shares.bulk.template');
+        Route::post('shares/bulk/upload', [ShareController::class, 'upload'])->name('shares.bulk.upload');
+        Route::delete('sales/bulk-delete', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
+        Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
+        Route::get('sales/bulk/template', [SaleController::class, 'downloadTemplate'])->name('sales.bulk.template');
+        Route::post('sales/bulk/upload', [SaleController::class, 'upload'])->name('sales.bulk.upload');
+        Route::get('sales/template', [SaleController::class, 'downloadTemplate'])->name('sales.template');
+        Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
+        Route::post('sales/upload', [SaleController::class, 'upload'])->name('sales.upload');
+    });
+
+    // Rutas accesibles para todos los roles autenticados
+    Route::get('/history-sales', [SaleHistoryController::class, 'index'])->name('history.sales');
     Route::get('/circuits/{circuit}/tacks', [TackController::class, 'index'])->name('tacks.index');
     Route::post('/tacks', [TackController::class, 'store'])->name('tacks.store');
     Route::put('/tacks/{tack}', [TackController::class, 'update'])->name('tacks.update');
     Route::delete('/tacks/{tack}', [TackController::class, 'destroy'])->name('tacks.destroy');
-
-    // Rutas de Sellers
     Route::get('/users/{user}/sellers', [SellerController::class, 'index'])->name('sellers.index');
-
-    // Rutas de Webproducts
+    Route::resource('sellers', SellerController::class)->except(['index', 'show', 'create', 'edit']);
     Route::get('/products/{product}/webproducts', [WebproductController::class, 'index'])->name('webproducts.index');
     Route::post('/webproducts', [WebproductController::class, 'store'])->name('webproducts.store');
     Route::put('/webproducts/{webproduct}', [WebproductController::class, 'update'])->name('webproducts.update');
     Route::delete('/webproducts/{webproduct}', [WebproductController::class, 'destroy'])->name('webproducts.destroy');
-
-    // Rutas de Shares (Cuotas)
-    Route::delete('shares/bulk-delete', [ShareController::class, 'bulkDestroy'])->name('shares.bulk-destroy');
-    Route::get('shares/bulk', [ShareController::class, 'bulk'])->name('shares.bulk');
-    Route::get('shares/bulk/template', [ShareController::class, 'downloadTemplate'])->name('shares.bulk.template');
-    Route::post('shares/bulk/upload', [ShareController::class, 'upload'])->name('shares.bulk.upload');
-    Route::resource('shares', ShareController::class);
-
-    // Rutas de Sales (Ventas)
-    Route::delete('sales/bulk-delete', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
-    Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
-    Route::get('sales/bulk/template', [SaleController::class, 'downloadTemplate'])->name('sales.bulk.template');
-    Route::post('sales/bulk/upload', [SaleController::class, 'upload'])->name('sales.bulk.upload');
-    Route::get('sales/template', [SaleController::class, 'downloadTemplate'])->name('sales.template');
-    Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
-    Route::post('sales/upload', [SaleController::class, 'upload'])->name('sales.upload');
-    Route::resource('sales', SaleController::class);
+    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
 });
 
 require __DIR__.'/settings.php';

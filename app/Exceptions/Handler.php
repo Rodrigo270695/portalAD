@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,6 +36,10 @@ class Handler extends ExceptionHandler
             return Inertia::render('Error/NotFound')
                 ->toResponse($request)
                 ->setStatusCode(Response::HTTP_NOT_FOUND);
+        });
+
+        $this->renderable(function (AuthorizationException $e) {
+            return Inertia::render('Error/Forbidden');
         });
     }
 }
