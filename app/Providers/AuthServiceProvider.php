@@ -45,5 +45,10 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('pdv-access', function ($user) {
             return $user->hasRole(['pdv', 'zonificado']);
         });
+
+        // Define la habilidad 'all-access' para permitir acceso a todos los roles autenticados
+        Gate::define('all-access', function ($user) {
+            return true; // Permite acceso a cualquier usuario autenticado
+        });
     }
 }

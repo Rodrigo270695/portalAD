@@ -16,9 +16,10 @@ class CheckRouteAccess
         'products.index' => 'admin-qa',
         'shares.index' => 'admin-qa',
         'sales.index' => 'admin-qa',
+        'campaigns.index' => 'admin-qa',
         'history.sales' => 'pdv-access',
         'payments.index' => 'pdv-access',
-        'campaigns.index' => 'pdv-access',
+        'history-campaign.index' => 'all-access',
         'dashboard' => 'pdv-access',
     ];
 

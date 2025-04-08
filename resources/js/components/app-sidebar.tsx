@@ -67,6 +67,11 @@ const allNavItems: NavItem[] = [
                 icon: Dot,
             },
             {
+                title: 'Campaña',
+                href: '/campaigns',
+                icon: Dot,
+            },
+            {
                 title: 'Cuota',
                 href: '/shares',
                 icon: Dot,
@@ -90,14 +95,14 @@ const allNavItems: NavItem[] = [
     },
     {
         title: 'Campañas',
-        href: '/campaigns',
+        href: '/history-campaign',
         icon: Megaphone,
     }
 ];
 
 export function AppSidebar({ collapsed = false }: AppSidebarProps) {
     const { props: { auth: { user } } } = usePage<PageProps>();
-    
+
     // Si no hay usuario, solo mostrar el dashboard
     if (!user) {
         return (
@@ -124,16 +129,16 @@ export function AppSidebar({ collapsed = false }: AppSidebarProps) {
 
         // QA solo tiene acceso al dashboard y grupo de ventas
         if (user.roles.includes('qa')) {
-            return item.title === 'Dashboard' || 
-                   item.title === 'Ventas';
+            return item.title === 'Dashboard' ||
+                item.title === 'Ventas';
         }
 
         // PDV y zonificado solo tienen acceso a dashboard, ventas pdv, abonos y campañas
         if (user.roles.includes('pdv') || user.roles.includes('zonificado')) {
-            return item.title === 'Dashboard' || 
-                   item.title === 'Ventas PDV' || 
-                   item.title === 'Abonos' || 
-                   item.title === 'Campañas';
+            return item.title === 'Dashboard' ||
+                item.title === 'Ventas PDV' ||
+                item.title === 'Abonos' ||
+                item.title === 'Campañas';
         }
 
         return false;

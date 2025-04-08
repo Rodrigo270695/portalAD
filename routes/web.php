@@ -14,6 +14,7 @@ use App\Http\Controllers\SellerController;
 use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\HistoryCampaignController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -47,6 +48,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('products', ProductController::class);
         Route::resource('shares', ShareController::class);
         Route::resource('sales', SaleController::class);
+        Route::resource('campaigns', CampaignController::class);
         Route::delete('shares/bulk-delete', [ShareController::class, 'bulkDestroy'])->name('shares.bulk-destroy');
         Route::get('shares/bulk', [ShareController::class, 'bulk'])->name('shares.bulk');
         Route::get('shares/bulk/template', [ShareController::class, 'downloadTemplate'])->name('shares.bulk.template');
@@ -73,7 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/webproducts/{webproduct}', [WebproductController::class, 'update'])->name('webproducts.update');
     Route::delete('/webproducts/{webproduct}', [WebproductController::class, 'destroy'])->name('webproducts.destroy');
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
-    Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::get('history-campaign', [HistoryCampaignController::class, 'index'])->name('history-campaign.index');
 });
 
 require __DIR__.'/settings.php';
