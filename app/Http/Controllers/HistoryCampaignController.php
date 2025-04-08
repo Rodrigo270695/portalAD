@@ -45,8 +45,12 @@ class HistoryCampaignController extends Controller
             'Información' => $campaigns->get('Información', collect()),
         ];
 
-        // Años disponibles (últimos 10 años)
-        $availableYears = range(now()->year, now()->year - 9);
+        // Años disponibles desde la base de datos
+        $availableYears = Campaign::selectRaw('YEAR(date_start) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
 
         // Meses disponibles
         $availableMonths = [

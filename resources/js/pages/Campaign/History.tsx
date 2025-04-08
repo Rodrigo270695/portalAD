@@ -2,7 +2,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import React from 'react';
+import React, { useState } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface Campaign {
     id: number;
@@ -42,6 +43,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const History = ({ campaignsByType, currentYear, currentMonth, availableYears, availableMonths }: Props) => {
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
     const handleYearChange = (value: string) => {
         router.get('/history-campaign', {
             year: value,
@@ -80,7 +83,6 @@ const History = ({ campaignsByType, currentYear, currentMonth, availableYears, a
                                 <SelectValue placeholder="Año">{currentYear}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Todos</SelectItem>
                                 {availableYears.map((year) => (
                                     <SelectItem key={year} value={year.toString()}>
                                         {year}
@@ -119,7 +121,8 @@ const History = ({ campaignsByType, currentYear, currentMonth, availableYears, a
                                                     <img
                                                         src={campaign.image_url}
                                                         alt={campaign.name}
-                                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                                                        onClick={() => setSelectedImage(campaign.image_url)}
                                                     />
                                                 ) : (
                                                     <div className="flex h-full w-full items-center justify-center bg-muted">
@@ -162,6 +165,18 @@ const History = ({ campaignsByType, currentYear, currentMonth, availableYears, a
                     </div>
                 </div>
             </div>
+
+            <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+                <DialogContent className="max-w-4xl">
+                    {selectedImage && (
+                        <img
+                            src={selectedImage}
+                            alt="Vista ampliada"
+                            className="w-full h-auto"
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 };
