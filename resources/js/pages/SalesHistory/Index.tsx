@@ -4,7 +4,6 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Search, ChevronDown, ChevronUp } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState } from 'react';
 
 
@@ -16,7 +15,7 @@ interface WebProduct {
 interface SaleData {
     [key: string]: {
         [key: string]: number;
-    };
+    }; 
 }
 
 interface SaleDetails {
@@ -34,13 +33,8 @@ interface Props {
     salesData: SaleData;
     salesDetails: SaleDetails;
     webProducts: WebProduct[];
-    currentYear: number;
-    currentMonth: number;
-    availableYears: number[];
-    availableMonths: Array<{
-        value: number;
-        label: string;
-    }>;
+    startDate: string;
+    endDate: string;
     isZonificado: boolean;
     isPdv: boolean;
 }
@@ -62,33 +56,24 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const History = ({ salesData, salesDetails, webProducts, currentYear, currentMonth, availableYears, availableMonths, isZonificado, isPdv }: Props) => {
+const History = ({ salesData, salesDetails, webProducts, startDate, endDate, isZonificado, isPdv }: Props) => {
     const [expandedRows, setExpandedRows] = useState<string[]>([]);
+    const [dateRange, setDateRange] = useState<{
+        startDate: string;
+        endDate: string;
+    }>({ startDate, endDate });
 
-    const handleYearChange = (value: string) => {
-        router.get(route('history.sales'), {
-            year: value,
-            month: currentMonth
-        }, {
-            preserveState: true,
-            preserveScroll: true
-        });
-    };
-
-    const handleMonthChange = (value: string) => {
-        router.get(route('history.sales'), {
-            year: currentYear,
-            month: value
-        }, {
-            preserveState: true,
-            preserveScroll: true
-        });
+    const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
+        setDateRange(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
     const handleSearch = () => {
         router.get(route('history.sales'), {
-            year: currentYear,
-            month: currentMonth
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate
         }, {
             preserveState: true,
             preserveScroll: true
@@ -151,38 +136,20 @@ const History = ({ salesData, salesDetails, webProducts, currentYear, currentMon
 
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="w-full sm:w-48">
-                        <Select
-                            value={currentYear.toString()}
-                            onValueChange={handleYearChange}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar año" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableYears.map((year) => (
-                                    <SelectItem key={year} value={year.toString()}>
-                                        {year}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <input
+                            type="date"
+                            className="w-full px-3 py-2 border rounded-md text-sm"
+                            value={dateRange.startDate}
+                            onChange={(e) => handleDateChange('startDate', e.target.value)}
+                        />
                     </div>
                     <div className="w-full sm:w-48">
-                        <Select
-                            value={currentMonth.toString()}
-                            onValueChange={handleMonthChange}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar mes" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableMonths.map((month) => (
-                                    <SelectItem key={month.value} value={month.value.toString()}>
-                                        {month.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <input
+                            type="date"
+                            className="w-full px-3 py-2 border rounded-md text-sm"
+                            value={dateRange.endDate}
+                            onChange={(e) => handleDateChange('endDate', e.target.value)}
+                        />
                     </div>
                     <Button onClick={handleSearch}>
                         <Search className="mr-2 h-4 w-4" />
@@ -237,7 +204,7 @@ const History = ({ salesData, salesDetails, webProducts, currentYear, currentMon
                                         {webProducts.map((product) => (
                                             <TableCell key={product.id} className="text-center w-[60px] lg:w-[100px] p-1 lg:p-4">{row[product.id] || 0}</TableCell>
                                         ))}
-                                        <TableCell className="text-center font-medium w-[50px] lg:w-[80px] p-1 lg:p-4">{row.total}</TableCell>
+                                        <TableCell className="text-center font-bold w-[50px] lg:w-[80px] p-1 lg:p-4 bg-amber-50 text-amber-900 text-base lg:text-lg">{row.total}</TableCell>
                                     </TableRow>
                                     {(isZonificado || isPdv) && expandedRows.includes(row.date) && (
                                         <TableRow>
@@ -250,7 +217,7 @@ const History = ({ salesData, salesDetails, webProducts, currentYear, currentMon
                                                                 {webProducts.map((product) => (
                                                                     <TableHead key={product.id} className="text-center w-[60px] lg:w-[100px] uppercase text-[10px] lg:text-xs font-bold p-1 lg:p-4">{product.name}</TableHead>
                                                                 ))}
-                                                                <TableHead className="text-center w-[50px] lg:w-[80px] uppercase text-[10px] lg:text-xs font-bold p-1 lg:p-4">Total</TableHead>
+                                                                <TableHead className="text-center w-[50px] lg:w-[80px] uppercase text-[10px] lg:text-xs font-bold p-1 lg:p-4 bg-amber-100/50">Total</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
@@ -278,7 +245,7 @@ const History = ({ salesData, salesDetails, webProducts, currentYear, currentMon
                                                                             {pdvRow.products[product.id] || 0}
                                                                         </TableCell>
                                                                     ))}
-                                                                    <TableCell className="text-center w-[50px] lg:w-[80px] p-1 lg:p-4">{pdvRow.total}</TableCell>
+                                                                    <TableCell className="text-center font-bold w-[50px] lg:w-[80px] p-1 lg:p-4 bg-amber-50 text-amber-900 text-base lg:text-lg">{pdvRow.total}</TableCell>
                                                                 </TableRow>
                                                             ))}
                                                         </TableBody>

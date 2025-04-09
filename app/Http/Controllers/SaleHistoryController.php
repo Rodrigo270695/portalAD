@@ -17,8 +17,8 @@ class SaleHistoryController extends Controller
 
     public function index(Request $request)
     {
-        $year = $request->input('year', now()->year);
-        $month = $request->input('month', now()->month);
+        $startDate = $request->input('startDate') ? Carbon::parse($request->input('startDate')) : now()->startOfMonth();
+        $endDate = $request->input('endDate') ? Carbon::parse($request->input('endDate')) : now();
 
         $user = Auth::user();
         if (!$user || !($user instanceof \App\Models\User)) {
@@ -27,10 +27,9 @@ class SaleHistoryController extends Controller
 
         $isPdv = $user->hasRole('pdv');
         $isZonificado = $user->hasRole('zonificado');
-        
+
         $query = Sale::query()
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month);
+            ->whereBetween('date', [$startDate->startOfDay(), $endDate->endOfDay()]);
 
         // Si es PDV, solo mostrar sus ventas
         if ($isPdv) {
@@ -50,7 +49,7 @@ class SaleHistoryController extends Controller
             ->map(function($sales) {
                 return $sales->groupBy('webproduct_id')
                     ->map(function($productSales) {
-                        return $productSales->count();
+                        return $productSales->count(); 
                     });
             });
 
@@ -58,8 +57,7 @@ class SaleHistoryController extends Controller
         $salesDetails = [];
         if ($isPdv || $isZonificado) {
             $detailsQuery = Sale::query()
-                ->whereYear('date', $year)
-                ->whereMonth('date', $month);
+                ->whereBetween('date', [$startDate->startOfDay(), $endDate->endOfDay()]);
 
             if ($isPdv) {
                 $detailsQuery->where('user_id', $user->id);
@@ -89,22 +87,13 @@ class SaleHistoryController extends Controller
         }
 
         $webProducts = WebProduct::orderBy('name')->get(['id', 'name']);
-        $availableYears = range(now()->year, 2023);
-        $availableMonths = collect(range(1, 12))->map(function($month) {
-            return [
-                'value' => $month,
-                'label' => \Carbon\Carbon::create()->month($month)->locale('es')->monthName
-            ];
-        });
 
         return Inertia::render('SalesHistory/Index', [
             'salesData' => $salesData,
             'salesDetails' => $salesDetails,
             'webProducts' => $webProducts,
-            'currentYear' => (int) $year,
-            'currentMonth' => (int) $month,
-            'availableYears' => $availableYears,
-            'availableMonths' => $availableMonths,
+            'startDate' => $startDate->format('Y-m-d'),
+            'endDate' => $endDate->format('Y-m-d'),
             'isZonificado' => $isZonificado,
             'isPdv' => $isPdv
         ]);

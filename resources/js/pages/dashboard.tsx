@@ -1,7 +1,7 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '../layouts/app-layout';
-import { AlertCircle, ChevronDown, DollarSign, PieChart, TrendingUp, FileText, User } from 'lucide-react';
+import { AlertCircle, ChevronDown, PieChart, User } from 'lucide-react';
 import CardDashboard from '../components/CardDashboard';
 import PDVInfo from '../components/PDVInfo';
 import { useIsMobile } from '../hooks/use-mobile';
@@ -96,44 +96,99 @@ export default function Dashboard({ userData }: DashboardProps) {
 
                     <CardDashboard title="Avance de Ventas" variant="emerald">
                         <div className="p-2 sm:p-4 flex flex-col space-y-3">
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                <div className="bg-blue-200 rounded-lg p-2 sm:p-3">
-                                    <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Cuota prepago</div>
-                                    <div className="flex flex-col gap-1">
+                            <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                    <div className="bg-orange-200 rounded-lg p-2 sm:p-3">
+                                        <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Recargas totales</div>
                                         <div className="flex items-center">
-                                            <FileText className="text-blue-800 mr-2" size={isMobile ? 16 : 20} />
-                                            <span className="text-blue-900 text-xl sm:text-2xl font-bold">{userData.totalShare}</span>
+                                            <span className="text-blue-800 mr-2 font-medium">S/</span>
+                                            <span className="text-blue-900 text-xl sm:text-2xl font-bold">{userData.salesData.totalRecharges}</span>
                                         </div>
-                                        {userData.isZonificado && (
-                                            <div className="flex items-center text-sm text-blue-600">
-                                                <User className="mr-1" size={16} />
-                                                <span>{userData.pdvCount} PDV{userData.pdvCount !== 1 ? 's' : ''}</span>
+                                    </div>
+
+                                    <div className="bg-green-200 rounded-lg p-2 sm:p-3">
+                                        <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Ratio</div>
+                                        <div className="flex items-center">
+                                            <PieChart className="text-blue-800 mr-2" size={isMobile ? 16 : 20} />
+                                            <span className="text-blue-900 text-xl sm:text-2xl font-bold">{userData.salesData.ratio.toFixed(2)}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md">
+                                    <div className="relative space-y-4">
+                                        {/* Encabezado con título y valores */}
+                                        <div className="flex flex-col space-y-2.5">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-amber-950 font-semibold tracking-tight text-base sm:text-lg">Avance de Cuota Prepago</h3>
+                                                <div className="bg-amber-100/80 px-3 py-1.5 rounded-lg">
+                                                    <span className="text-amber-900 font-medium text-sm sm:text-base">
+                                                        {userData.salesData.totalSales} / {userData.salesData.quotaMetrics.remaining + userData.salesData.totalSales}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
+                                            <div className="flex items-baseline space-x-2">
+                                                <span className="text-2xl sm:text-3xl font-bold text-amber-800">
+                                                    {userData.salesData.quotaMetrics.progress.toFixed(1)}%
+                                                </span>
+                                                <span className="text-amber-700 text-sm">completado</span>
+                                            </div>
+                                        </div>
 
-                                <div className="bg-blue-200 rounded-lg p-2 sm:p-3">
-                                    <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Avance prepago</div>
-                                    <div className="flex items-center">
-                                        <TrendingUp className="text-blue-800 mr-2" size={isMobile ? 16 : 20} />
-                                        <span className="text-blue-900 text-xl sm:text-2xl font-bold">{userData.salesData.totalSales}</span>
-                                    </div>
-                                </div>
+                                        {/* Barra de progreso mejorada */}
+                                        <div className="relative pt-2">
+                                            <div className="w-full h-3 sm:h-4 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg overflow-hidden">
+                                                <div
+                                                    className={clsx(
+                                                        "h-full rounded-lg",
+                                                        {
+                                                            'bg-gradient-to-r from-emerald-400 to-teal-500': userData.salesData.quotaMetrics.progress >= 100,
+                                                            'bg-gradient-to-r from-amber-400 to-orange-500': userData.salesData.quotaMetrics.progress >= 75 && userData.salesData.quotaMetrics.progress < 100,
+                                                            'bg-gradient-to-r from-rose-400 to-red-500': userData.salesData.quotaMetrics.progress < 75
+                                                        }
+                                                    )}
+                                                    style={{
+                                                        width: `${userData.salesData.quotaMetrics.progress}%`
+                                                    }}
+                                                />
+                                            </div>
 
-                                <div className="bg-amber-200 rounded-lg p-2 sm:p-3">
-                                    <div className="text-amber-700 font-medium text-sm sm:text-base mb-1">Recargas totales</div>
-                                    <div className="flex items-center">
-                                        <DollarSign className="text-amber-800 mr-2" size={isMobile ? 16 : 20} />
-                                        <span className="text-amber-900 text-xl sm:text-2xl font-bold">{userData.salesData.totalRecharges}</span>
-                                    </div>
-                                </div>
+                                            {/* Marcadores de progreso */}
+                                            <div className="mt-2 flex justify-between text-xs text-amber-800/60 font-medium px-1">
+                                                <div className="flex flex-col items-start">
+                                                    <div className="h-1 w-0.5 bg-amber-300 mb-1"></div>
+                                                    <span>0%</span>
+                                                </div>
+                                                {[25, 50, 75].map((mark) => (
+                                                    <div key={mark} className="flex flex-col items-center">
+                                                        <div className="h-1 w-0.5 bg-amber-300 mb-1"></div>
+                                                        <span>{mark}%</span>
+                                                    </div>
+                                                ))}
+                                                <div className="flex flex-col items-end">
+                                                    <div className="h-1 w-0.5 bg-amber-300 mb-1"></div>
+                                                    <span>100%</span>
+                                                </div>
+                                            </div>
 
-                                <div className="bg-blue-200 rounded-lg p-2 sm:p-3">
-                                    <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Ratio</div>
-                                    <div className="flex items-center">
-                                        <PieChart className="text-blue-800 mr-2" size={isMobile ? 16 : 20} />
-                                        <span className="text-blue-900 text-xl sm:text-2xl font-bold">{userData.salesData.ratio.toFixed(2)}%</span>
+                                            {/* Detalles de avance y cuota */}
+                                            <div className="mt-4 grid grid-cols-2 gap-4">
+                                                <div className="bg-blue-100 rounded-lg p-3">
+                                                    <div className="text-amber-800/70 text-xs font-medium mb-1">Avance actual</div>
+                                                    <div className="flex items-baseline gap-1">
+                                                        <span className="text-amber-900 text-lg font-bold">{userData.salesData.totalSales}</span>
+                                                        <span className="text-amber-700 text-sm">ventas</span>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-blue-100 rounded-lg p-3">
+                                                    <div className="text-amber-800/70 text-xs font-medium mb-1">Cuota objetivo</div>
+                                                    <div className="flex items-baseline gap-1">
+                                                        <span className="text-amber-900 text-lg font-bold">{userData.salesData.quotaMetrics.remaining + userData.salesData.totalSales}</span>
+                                                        <span className="text-amber-700 text-sm">ventas</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
