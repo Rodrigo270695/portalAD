@@ -30,9 +30,6 @@ class TackController extends Controller
             'tacks' => $tacks,
             'circuit' => $circuit,
             'filters' => request()->only(['search', 'page', 'per_page']),
-            'auth' => [
-                'user' => Auth::user(),
-            ],
         ]);
     }
 

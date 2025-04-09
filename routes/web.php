@@ -40,7 +40,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('zonals', ZonalController::class);
         Route::resource('circuits', CircuitController::class);
         Route::resource('users', UserController::class);
+
         Route::post('users/bulk/create', [UserController::class, 'bulkCreate'])->name('users.bulk.create');
+        Route::delete('shares/bulk-delete', [ShareController::class, 'bulkDestroy'])->name('shares.bulk-destroy');
+        Route::get('shares/bulk', [ShareController::class, 'bulk'])->name('shares.bulk');
+        Route::get('shares/bulk/template', [ShareController::class, 'downloadTemplate'])->name('shares.bulk.template');
+        Route::post('shares/bulk/upload', [ShareController::class, 'upload'])->name('shares.bulk.upload');
+        Route::delete('sales/bulk-delete', [SaleController::class, 'bulkDestroy'])->name('sales.bulk-destroy');
+        Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
+        Route::get('sales/bulk/template', [SaleController::class, 'downloadTemplate'])->name('sales.bulk.template');
+        Route::post('sales/bulk/upload', [SaleController::class, 'upload'])->name('sales.bulk.upload');
+        Route::get('sales/template', [SaleController::class, 'downloadTemplate'])->name('sales.template');
+        Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
+        Route::post('sales/upload', [SaleController::class, 'upload'])->name('sales.upload');
+        Route::get('/products/{product}/webproducts', [WebproductController::class, 'index'])->name('webproducts.index');
+        Route::get('/circuits/{circuit}/tacks', [TackController::class, 'index'])->name('tacks.index');
     });
 
     // Rutas para admin y qa
@@ -60,22 +74,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('sales/template', [SaleController::class, 'downloadTemplate'])->name('sales.template');
         Route::get('sales/bulk', [SaleController::class, 'bulk'])->name('sales.bulk');
         Route::post('sales/upload', [SaleController::class, 'upload'])->name('sales.upload');
+        Route::get('/products/{product}/webproducts', [WebproductController::class, 'index'])->name('webproducts.index');
+        Route::get('/circuits/{circuit}/tacks', [TackController::class, 'index'])->name('tacks.index');
     });
 
     // Rutas accesibles para todos los roles autenticados
     Route::get('/history-sales', [SaleHistoryController::class, 'index'])->name('history.sales');
-    Route::get('/circuits/{circuit}/tacks', [TackController::class, 'index'])->name('tacks.index');
     Route::post('/tacks', [TackController::class, 'store'])->name('tacks.store');
     Route::put('/tacks/{tack}', [TackController::class, 'update'])->name('tacks.update');
     Route::delete('/tacks/{tack}', [TackController::class, 'destroy'])->name('tacks.destroy');
     Route::get('/users/{user}/sellers', [SellerController::class, 'index'])->name('sellers.index');
     Route::resource('sellers', SellerController::class)->except(['index', 'show', 'create', 'edit']);
-    Route::get('/products/{product}/webproducts', [WebproductController::class, 'index'])->name('webproducts.index');
     Route::post('/webproducts', [WebproductController::class, 'store'])->name('webproducts.store');
     Route::put('/webproducts/{webproduct}', [WebproductController::class, 'update'])->name('webproducts.update');
     Route::delete('/webproducts/{webproduct}', [WebproductController::class, 'destroy'])->name('webproducts.destroy');
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::get('history-campaign', [HistoryCampaignController::class, 'index'])->name('history-campaign.index');
+
 });
 
 require __DIR__.'/settings.php';

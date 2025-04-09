@@ -21,6 +21,16 @@ class CheckRouteAccess
         'payments.index' => 'pdv-access',
         'history-campaign.index' => 'all-access',
         'dashboard' => 'pdv-access',
+        'shares.bulk' => 'admin-qa',
+        'shares.bulk.template' => 'admin-qa',
+        'shares.bulk.upload' => 'admin-qa',
+        'shares.bulk-destroy' => 'admin-qa',
+        'sales.bulk' => 'admin-qa',
+        'sales.bulk.template' => 'admin-qa',
+        'sales.bulk.upload' => 'admin-qa',
+        'sales.bulk-destroy' => 'admin-qa',
+        'webproducts.index' => 'admin-qa',
+        'tacks.index' => 'admin-qa',
     ];
 
     public function handle(Request $request, Closure $next)

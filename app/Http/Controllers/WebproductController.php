@@ -29,10 +29,7 @@ class WebproductController extends Controller
         return Inertia::render('Product/Webproduct/Index', [
             'webproducts' => $webproducts,
             'product' => $product,
-            'filters' => request()->only(['search', 'page', 'per_page']),
-            'auth' => [
-                'user' => Auth::user(),
-            ],
+            'filters' => request()->only(['search', 'page', 'per_page'])
         ]);
     }
 
