@@ -3,10 +3,13 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+        <meta name="theme-color" content="#000000">
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
+        <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
 
         {{-- Favicon --}}
-        <link rel="icon" href="/logo.svg" type="image/svg+xml">
-        <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="{{ asset('logo.svg') }}" type="image/svg+xml">
+        <link rel="alternate icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>

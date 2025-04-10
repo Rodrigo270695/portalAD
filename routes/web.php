@@ -22,6 +22,10 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
+Route::get('/offline', function () {
+    return Inertia::render('offline');
+})->name('offline');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });

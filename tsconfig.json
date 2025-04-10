@@ -110,7 +110,8 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["./resources/js/*"],
-            "ziggy-js": ["./vendor/tightenco/ziggy"]
+            "ziggy-js": ["./vendor/tightenco/ziggy"],
+            "virtual:pwa-register": ["./resources/js/types/virtual-pwa.d.ts"]
         },
         "jsx": "react-jsx"
     },
