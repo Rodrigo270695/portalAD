@@ -65,6 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:admin-qa')->group(function () {
         Route::resource('products', ProductController::class);
         Route::resource('shares', ShareController::class);
+        Route::get('sales/export', [SaleController::class, 'export'])->name('sales.export');
         Route::resource('sales', SaleController::class);
         Route::resource('campaigns', CampaignController::class);
         Route::delete('shares/bulk-delete', [ShareController::class, 'bulkDestroy'])->name('shares.bulk-destroy');

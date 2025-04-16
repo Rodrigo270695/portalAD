@@ -40,6 +40,7 @@ interface WebProduct {
 export interface Sale {
     id: number;
     date: string;
+    telefono: string;
     cluster_quality: string;
     recharge_date: string;
     recharge_amount: number;
@@ -74,6 +75,7 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm<{
         date: string;
+        telefono: string;
         cluster_quality: string;
         recharge_date: string;
         recharge_amount: string;
@@ -84,6 +86,7 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
         webproduct_id: number;
     }>({
         date: getLimaDate(),
+        telefono: '',
         cluster_quality: '',
         recharge_date: getLimaDate(),
         recharge_amount: '',
@@ -98,6 +101,7 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
         if (isOpen) {
             setData({
                 date: sale?.date || getLimaDate(),
+                telefono: sale?.telefono || '',
                 cluster_quality: sale?.cluster_quality || '',
                 recharge_date: sale?.recharge_date || getLimaDate(),
                 recharge_amount: sale?.recharge_amount?.toString() || '',
@@ -176,6 +180,26 @@ const SaleModal = ({ isOpen, onClose, sale, size = 'md', users, webProducts }: S
                             </div>
                             {errors.date && (
                                 <p className="text-sm text-destructive mt-1">{errors.date}</p>
+                            )}
+                        </div>
+
+                        <div className="col-span-1">
+                            <div className="mb-1">
+                                <Label htmlFor="telefono" className={classNames({ 'text-destructive': errors.telefono })} required>
+                                    Teléfono
+                                </Label>
+                            </div>
+                            <Input
+                                id="telefono"
+                                type="text"
+                                value={data.telefono}
+                                onChange={(e) => setData('telefono', e.target.value)}
+                                className={classNames({ 'border-destructive': errors.telefono })}
+                                maxLength={9}
+                                placeholder="Ingrese el teléfono"
+                            />
+                            {errors.telefono && (
+                                <p className="text-sm text-destructive mt-1">{errors.telefono}</p>
                             )}
                         </div>
 

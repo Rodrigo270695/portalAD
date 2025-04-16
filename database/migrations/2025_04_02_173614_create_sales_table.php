@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('sales', callback: function (Blueprint $table) {
             $table->id();
             $table->date('date');
+            $table->string('telefono', 9);
             $table->string('cluster_quality','50')->nullable();
             $table->date('recharge_date')->nullable();
             $table->integer('recharge_amount')->nullable();

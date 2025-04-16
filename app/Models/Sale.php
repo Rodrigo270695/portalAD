@@ -12,6 +12,7 @@ class Sale extends Model
 {
     protected $fillable = [
         'date',
+        'telefono',
         'cluster_quality',
         'recharge_date',
         'recharge_amount',

@@ -6,9 +6,9 @@ import { Pagination } from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, Link } from '@inertiajs/react';
-import { Edit, Plus, Trash2, Upload } from 'lucide-react';
+import { Edit, Download, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import SaleModal, { type Sale } from './SaleModal';
+import SaleModal, { type Sale as ModalSale } from './SaleModal';
 import { ModalSize } from '@/components/ui/crud-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Swal from 'sweetalert2';
@@ -46,30 +46,29 @@ interface Product {
     updated_at?: string;
 }
 
-interface WebProduct {
+type WebProduct = {
     id: number;
     name: string;
     description?: string;
     product_id: number;
-    product?: Product | null;
+    product?: {
+        id: number;
+        name: string;
+    } | null;
     created_at?: string;
     updated_at?: string;
-}
+};
 
-interface Sale {
-    id: number;
-    date: string;
-    cluster_quality: string;
-    recharge_date: string;
-    recharge_amount: number;
-    accumulated_amount: number;
-    commissionable_charge: boolean;
-    action: string;
-    user_id: number;
-    webproduct_id: number;
-    user: User;
-    webproduct: WebProduct;
-}
+type Sale = Omit<ModalSale, 'webproduct'> & {
+    webproduct: {
+        id: number;
+        name: string;
+        product?: {
+            id: number;
+            name: string;
+        } | null;
+    };
+};
 
 interface Props {
     sales: {
@@ -123,7 +122,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Index({ sales, users, webProducts, filters, totals }: Props) {
     const [perPage, setPerPage] = useState(filters.per_page?.toString() || '10');
-    const [date, setDate] = useState(filters.date || getLimaDate());
+    const [startDate, setStartDate] = useState(filters.startDate || getLimaDate());
+    const [endDate, setEndDate] = useState(filters.endDate || getLimaDate());
     const [pdv, setPdv] = useState(filters.pdv || '');
     const [zonificado, setZonificado] = useState(filters.zonificado || '');
     const [product, setProduct] = useState(filters.product || 'all');
@@ -131,7 +131,7 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
     const [commissionable, setCommissionable] = useState(filters.commissionable || 'all');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedSale, setSelectedSale] = useState<Sale | undefined>(undefined);
+    const [selectedSale, setSelectedSale] = useState<ModalSale | undefined>(undefined);
     const [modalSize, setModalSize] = useState<ModalSize>('md');
     const [selectedSales, setSelectedSales] = useState<number[]>([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -139,20 +139,27 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
     const debouncedPdv = useDebounce(pdv, 300);
     const debouncedZonificado = useDebounce(zonificado, 300);
 
-    useEffect(() => {
-        router.reload({
+    const handleFilters = () => {
+        router.visit('/sales', {
             data: {
-                commissionable,
+                page: 1,
                 per_page: perPage,
-                date,
+                startDate,
+                endDate,
                 pdv: debouncedPdv,
                 zonificado: debouncedZonificado,
                 product,
                 webproduct,
+                commissionable,
             },
-            only: ['sales', 'filters', 'totals']
+            preserveState: true,
+            preserveScroll: true,
         });
-    }, [perPage, date, debouncedPdv, debouncedZonificado, product, webproduct, commissionable]);
+    };
+
+    useEffect(() => {
+        handleFilters();
+    }, [startDate, endDate, debouncedPdv, debouncedZonificado, product, webproduct, commissionable, perPage]);
 
     const handlePerPageChange = (value: string) => {
         setPerPage(value);
@@ -235,12 +242,6 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
         }
     };
 
-    const openCreateModal = (size: ModalSize = 'lg') => {
-        setSelectedSale(undefined);
-        setModalSize(size);
-        setIsModalOpen(true);
-    };
-
     const openEditModal = (sale: Sale, size: ModalSize = 'md') => {
         setSelectedSale(sale);
         setModalSize(size);
@@ -281,9 +282,15 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                                 Carga Masiva
                             </Link>
                         </Button>
-                        <Button onClick={() => openCreateModal()}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Nueva Venta
+                        <Button 
+                            variant="outline"
+                            className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 hover:border-green-300"
+                            onClick={() => {
+                                window.location.href = `/sales/export?startDate=${startDate}&endDate=${endDate}&pdv=${pdv}&zonificado=${zonificado}&product=${product}&webproduct=${webproduct}&commissionable=${commissionable}`;
+                            }}
+                        >
+                            <Download className="mr-2 h-4 w-4" />
+                            Exportar Excel
                         </Button>
                     </div>
                 </div>
@@ -316,13 +323,26 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                     </Card>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                         <div>
-                            <Label htmlFor="date">Fecha</Label>
+                            <Label htmlFor="startDate">Fecha Inicio</Label>
                             <div className="relative">
                                 <Input
                                     type="date"
-                                    id="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
+                                    id="startDate"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="pl-10"
+                                />
+                                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                            </div>
+                        </div>
+                        <div>
+                            <Label htmlFor="endDate">Fecha Fin</Label>
+                            <div className="relative">
+                                <Input
+                                    type="date"
+                                    id="endDate"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
                                     className="pl-10"
                                 />
                                 <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -438,9 +458,14 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                         sales.data.map((sale) => (
                             <Card key={sale.id}>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-lg font-bold">
-                                        {new Date(sale.date).toLocaleDateString()}
-                                    </CardTitle>
+                                    <div className="flex flex-col">
+                                        <CardTitle className="text-lg font-bold">
+                                            {new Date(sale.date).toLocaleDateString()}
+                                        </CardTitle>
+                                        <div className="text-sm text-muted-foreground">
+                                            Teléfono: {sale.telefono}
+                                        </div>
+                                    </div>
 
                                 </CardHeader>
                                 <CardContent>
@@ -452,7 +477,7 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                                         {sale.user.zonificador && (
                                             <p className="text-sm">
                                                 <span className="font-medium">Zonificado:</span>{' '}
-                                                {sale.user.zonificador.circuit?.zonal.short_name} {sale.user.zonificador.name}
+                                                {sale.user.zonificador.name}
                                             </p>
                                         )}
                                         <p className="text-sm">
@@ -474,20 +499,7 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-end gap-2">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="yellow"
-                                                size="sm"
-                                                onClick={() => openEditModal(sale)}
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Editar venta</p>
-                                        </TooltipContent>
-                                    </Tooltip>
+
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button
@@ -527,7 +539,7 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                                     />
                                 </TableHead>
                                 <TableHead>Fecha</TableHead>
-
+                                <TableHead>Teléfono</TableHead>
                                 <TableHead>PDV</TableHead>
                                 <TableHead>Zonificado</TableHead>
                                 <TableHead>Producto</TableHead>
@@ -567,12 +579,12 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                                             />
                                         </TableCell>
                                         <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-
+                                        <TableCell>{sale.telefono}</TableCell>
                                         <TableCell>{sale.user.name} ({sale.user.dni})</TableCell>
                                         <TableCell>
                                             {sale.user.zonificador && (
                                                 <span>
-                                                    {sale.user.zonificador.circuit?.zonal.short_name} {sale.user.zonificador.name}
+                                                    {sale.user.zonificador.name}
                                                 </span>
                                             )}
                                         </TableCell>
@@ -595,20 +607,7 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                                         <TableCell>{sale.commissionable_charge ? 'Sí' : 'No'}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button
-                                                            variant="ghostYellow"
-                                                            size="icon"
-                                                            onClick={() => openEditModal(sale)}
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Editar venta</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
+
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button

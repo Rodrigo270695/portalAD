@@ -27,6 +27,11 @@ class SaleRequest extends FormRequest
                 'required',
                 'date',
             ],
+            'telefono' => [
+                'required',
+                'string',
+                'size:9',
+            ],
             'cluster_quality' => [
                 'nullable',
                 'string',

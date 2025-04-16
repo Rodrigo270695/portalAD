@@ -9,9 +9,12 @@ use App\Models\WebProduct;
 use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use App\Exports\SalesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SaleController extends Controller
 {
@@ -21,18 +24,26 @@ class SaleController extends Controller
     public function index(Request $request)
     {
         // Obtener parámetros de la solicitud
-        $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
-        $date = $request->input('date', now()->setTimezone('America/Lima')->format('Y-m-d'));
+        $perPage = $request->input('per_page', 10);
+        $startDate = $request->input('startDate', now()->format('Y-m-d'));
+        $endDate = $request->input('endDate', now()->format('Y-m-d'));
+        $pdv = $request->input('pdv');
+        $zonificado = $request->input('zonificado');
+        $product = $request->input('product');
+        $webproduct = $request->input('webproduct');
+        $commissionable = $request->input('commissionable');
         $query = Sale::with([
             'user.circuit.zonal',
             'user.zonificador.circuit.zonal',
             'webproduct.product'
         ]);
 
-        // Filtro por fecha
-        if ($date && $date !== '') {
-            $query->whereDate('date', $date);
+        if ($startDate && $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        } else {
+            $today = now()->setTimezone('America/Lima')->format('Y-m-d');
+            $query->whereDate('date', $today);
         }
 
         // Filtro por PDV
@@ -117,7 +128,8 @@ class SaleController extends Controller
             'filters' => [
                 'page' => $page,
                 'per_page' => $perPage,
-                'date' => $date,
+                'startDate' => $startDate,
+                'endDate' => $endDate,
                 'pdv' => $pdv,
                 'zonificado' => $zonificado,
                 'product' => $product,
@@ -195,6 +207,147 @@ class SaleController extends Controller
     /**
      * Download the template for bulk upload.
      */
+    /**
+     * Export sales to Excel.
+     */
+    public function export(Request $request)
+    {
+        try {
+            $startDate = $request->input('startDate', now()->format('Y-m-d'));
+            $endDate = $request->input('endDate', now()->format('Y-m-d'));
+            $pdv = $request->input('pdv');
+            $zonificado = $request->input('zonificado');
+            $product = $request->input('product');
+            $webproduct = $request->input('webproduct');
+            $commissionable = $request->input('commissionable');
+
+            $fileName = 'ventas_' . $startDate . '_a_' . $endDate . '.xlsx';
+
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Set headers
+            $headers = [
+                'ID',
+                'Fecha',
+                'Teléfono',
+                'PDV',
+                'DNI PDV',
+                'Zonificador',
+                'Zonal',
+                'Producto',
+                'Web Producto',
+                'Calidad de Cluster',
+                'Fecha de Recarga',
+                'Monto de Recarga',
+                'Monto Acumulado',
+                'Comisionable',
+                'Acción',
+            ];
+
+            foreach ($headers as $key => $header) {
+                $sheet->setCellValue(chr(65 + $key) . '1', $header);
+            }
+
+            // Get data
+            $query = Sale::query()
+                ->with(['user.zonificador.circuit.zonal', 'webproduct.product']);
+
+            // Aplicar filtros
+            if ($startDate && $endDate) {
+                $query->whereBetween('date', [$startDate, $endDate]);
+            }
+
+            // Filtro por PDV
+            if ($pdv) {
+                $query->whereHas('user', function($q) use ($pdv) {
+                    // Si el pdv parece ser un DNI (solo números), aplicar padding
+                    if (is_numeric($pdv)) {
+                        $paddedDni = str_pad($pdv, 8, '0', STR_PAD_LEFT);
+                        $q->where('name', 'like', "%{$pdv}%")
+                            ->orWhere('dni', $paddedDni);
+                    } else {
+                        $q->where('name', 'like', "%{$pdv}%")
+                            ->orWhere('dni', 'like', "%{$pdv}%");
+                    }
+                });
+            }
+
+            // Filtro por comisionable
+            if ($commissionable && $commissionable !== 'all') {
+                $query->where('commissionable_charge', $commissionable === 'true');
+            }
+
+            // Filtro por Zonificado y Zonal
+            if ($zonificado) {
+                $query->whereHas('user.zonificador', function($q) use ($zonificado) {
+                    $q->where('name', 'like', "%{$zonificado}%")
+                        ->orWhereHas('circuit.zonal', function($q) use ($zonificado) {
+                            $q->where('name', 'like', "%{$zonificado}%")
+                                ->orWhere('short_name', 'like', "%{$zonificado}%");
+                        });
+                });
+            }
+
+            // Filtro por producto
+            if ($product && $product !== 'all') {
+                $query->whereHas('webproduct', function($q) use ($product) {
+                    $q->where('product_id', $product);
+                });
+            }
+
+            // Filtro por web producto
+            if ($webproduct && $webproduct !== 'all') {
+                $query->where('webproduct_id', $webproduct);
+            }
+
+            $sales = $query->get();
+
+            // Fill data
+            $row = 2;
+            foreach ($sales as $sale) {
+                $sheet->setCellValue('A' . $row, $sale->id);
+                // Formatear la fecha
+                $dateValue = \PhpOffice\PhpSpreadsheet\Shared\Date::PHPToExcel($sale->date);
+                $sheet->setCellValue('B' . $row, $dateValue);
+                $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('yyyy-mm-dd');
+                $sheet->setCellValue('C' . $row, $sale->telefono);
+                $sheet->setCellValue('D' . $row, $sale->user->name);
+                $sheet->setCellValue('E' . $row, $sale->user->dni);
+                $sheet->setCellValue('F' . $row, $sale->user->zonificador ? $sale->user->zonificador->name : '');
+                $sheet->setCellValue('G' . $row, $sale->user->zonificador ? $sale->user->zonificador->circuit->zonal->name : '');
+                $sheet->setCellValue('H' . $row, $sale->webproduct->product ? $sale->webproduct->product->name : '');
+                $sheet->setCellValue('I' . $row, $sale->webproduct->name);
+                $sheet->setCellValue('J' . $row, $sale->cluster_quality);
+                $sheet->setCellValue('K' . $row, $sale->recharge_date);
+                $sheet->setCellValue('L' . $row, $sale->recharge_amount);
+                $sheet->setCellValue('M' . $row, $sale->accumulated_amount);
+                $sheet->setCellValue('N' . $row, $sale->commissionable_charge ? 'Sí' : 'No');
+                $sheet->setCellValue('O' . $row, $sale->action);
+                $row++;
+            }
+
+            // Auto size columns
+            foreach (range('A', 'O') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Create writer
+            $writer = new Xlsx($spreadsheet);
+
+            $tempFile = tempnam(sys_get_temp_dir(), 'excel');
+            $writer->save($tempFile);
+
+            return response()->file($tempFile, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
+            ])->deleteFileAfterSend();
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function downloadTemplate()
     {
         $spreadsheet = new Spreadsheet();
@@ -204,26 +357,28 @@ class SaleController extends Controller
         $sheet->setTitle('Instrucciones');
         $sheet->setCellValue('A1', 'Instrucciones para la carga masiva de ventas');
         $sheet->setCellValue('A3', '1. No modifiques los encabezados de las columnas');
-        $sheet->setCellValue('A4', '2. El DNI debe existir en el sistema');
-        $sheet->setCellValue('A5', '3. La fecha debe estar en formato YYYY-MM-DD');
-        $sheet->setCellValue('A6', '4. El campo comisionable debe ser 1 (Sí) o 0 (No)');
-        $sheet->setCellValue('A7', '5. Los montos deben ser números');
+        $sheet->setCellValue('A4', '2. El DNI PDV, la fecha, teléfono, comisionable y producto web son campos OBLIGATORIOS');
+        $sheet->setCellValue('A5', '3. El DNI debe existir en el sistema');
+        $sheet->setCellValue('A6', '4. La fecha debe estar en formato YYYY-MM-DD');
+        $sheet->setCellValue('A7', '5. El campo comisionable debe ser 1 (Sí) o 0 (No)');
+        $sheet->setCellValue('A8', '6. Los montos deben ser números');
 
         // Hoja de datos
         $sheet = $spreadsheet->createSheet();
         $sheet->setTitle('Ventas');
         $sheet->setCellValue('A1', 'DNI PDV');
         $sheet->setCellValue('B1', 'Fecha');
-        $sheet->setCellValue('C1', 'Calidad Cluster');
-        $sheet->setCellValue('D1', 'Fecha Recarga');
-        $sheet->setCellValue('E1', 'Monto Recarga');
-        $sheet->setCellValue('F1', 'Monto Acumulado');
-        $sheet->setCellValue('G1', 'Comisionable');
-        $sheet->setCellValue('H1', 'Acción');
-        $sheet->setCellValue('I1', 'Producto Web');
+        $sheet->setCellValue('C1', 'Teléfono');
+        $sheet->setCellValue('D1', 'Calidad Cluster');
+        $sheet->setCellValue('E1', 'Fecha Recarga');
+        $sheet->setCellValue('F1', 'Monto Recarga');
+        $sheet->setCellValue('G1', 'Monto Acumulado');
+        $sheet->setCellValue('H1', 'Comisionable');
+        $sheet->setCellValue('I1', 'Acción');
+        $sheet->setCellValue('J1', 'Producto Web');
 
         // Dar formato a los encabezados y ajustar ancho
-        foreach (range('A', 'I') as $col) {
+        foreach (range('A', 'J') as $col) {
             $sheet->getStyle($col . '1')->applyFromArray([
                 'font' => ['bold' => true],
                 'fill' => [
@@ -252,7 +407,7 @@ class SaleController extends Controller
         foreach ($users as $user) {
             $sheet->setCellValue('A' . $row, $user->dni);
             $sheet->setCellValue('B' . $row, $user->name);
-            $sheet->setCellValue('C' . $row, $user->circuit?->zonal->short_name);
+            $sheet->setCellValue('C' . $row, $user->circuit?->zonal->name);
             $row++;
         }
 
@@ -335,12 +490,13 @@ class SaleController extends Controller
                     // Extraer datos requeridos
                     $dni = str_pad(trim($row[0]), 8, '0', STR_PAD_LEFT);
                     $date = trim($row[1]);
-                    $webProductName = trim($row[8]);
-                    $commissionableCharge = $row[6];
+                    $phone = trim($row[2]);
+                    $webProductName = trim($row[9]);
+                    $commissionableCharge = $row[7];
 
                     // Validar campos requeridos
-                    if (!$dni || !$date || !$webProductName || !isset($commissionableCharge)) {
-                        throw new \Exception('Faltan campos requeridos (DNI, Fecha, Producto Web o Comisionable)');
+                    if (!$dni || !$date || !$phone || !$webProductName || !isset($commissionableCharge)) {
+                        throw new \Exception('Faltan campos requeridos (DNI, Fecha, Teléfono, Producto Web o Comisionable)');
                     }
 
                     // Validar DNI
@@ -355,6 +511,11 @@ class SaleController extends Controller
                         throw new \Exception('Formato de fecha inválido, debe ser YYYY-MM-DD');
                     }
 
+                    // Validar teléfono
+                    if (!preg_match('/^9\d{8}$/', $phone)) {
+                        throw new \Exception('El teléfono debe tener 9 dígitos, ser solo números y empezar con 9');
+                    }
+
                     // Validar producto web
                     $webProduct = WebProduct::where('name', $webProductName)->first();
                     if (!$webProduct) {
@@ -367,17 +528,17 @@ class SaleController extends Controller
                     }
 
                     // Validar campos opcionales con formato
-                    $rechargeDate = !empty($row[3]) ? \DateTime::createFromFormat('Y-m-d', trim($row[3])) : null;
-                    if (!empty($row[3]) && !$rechargeDate) {
+                    $rechargeDate = !empty($row[4]) ? \DateTime::createFromFormat('Y-m-d', trim($row[4])) : null;
+                    if (!empty($row[4]) && !$rechargeDate) {
                         throw new \Exception('Formato de fecha de recarga inválido, debe ser YYYY-MM-DD');
                     }
 
-                    $rechargeAmount = !empty($row[4]) ? trim($row[4]) : null;
+                    $rechargeAmount = !empty($row[5]) ? trim($row[5]) : null;
                     if ($rechargeAmount !== null && !is_numeric($rechargeAmount)) {
                         throw new \Exception('El monto de recarga debe ser un número');
                     }
 
-                    $accumulatedAmount = !empty($row[5]) ? trim($row[5]) : null;
+                    $accumulatedAmount = !empty($row[6]) ? trim($row[6]) : null;
                     if ($accumulatedAmount !== null && !is_numeric($accumulatedAmount)) {
                         throw new \Exception('El monto acumulado debe ser un número');
                     }
@@ -386,12 +547,13 @@ class SaleController extends Controller
                     Sale::create([
                         'user_id' => $user->id,
                         'date' => $dateObj->format('Y-m-d'),
-                        'cluster_quality' => !empty($row[2]) ? trim($row[2]) : null,
+                        'telefono' => $phone,
+                        'cluster_quality' => !empty($row[3]) ? trim($row[3]) : null,
                         'recharge_date' => $rechargeDate ? $rechargeDate->format('Y-m-d') : null,
                         'recharge_amount' => $rechargeAmount,
                         'accumulated_amount' => $accumulatedAmount,
                         'commissionable_charge' => (bool)$commissionableCharge,
-                        'action' => !empty($row[7]) ? trim($row[7]) : null,
+                        'action' => !empty($row[8]) ? trim($row[8]) : null,
                         'webproduct_id' => $webProduct->id, // Usar el ID del producto web encontrado
                     ]);
 
