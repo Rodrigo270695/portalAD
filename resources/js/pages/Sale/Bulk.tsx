@@ -63,7 +63,7 @@ export default function Bulk() {
 
         if (dnis.length === 0) return;
 
-        router.post('/users/bulk/create', 
+        router.post('/users/bulk/create',
             { dnis },
             {
                 onSuccess: () => {
@@ -78,12 +78,55 @@ export default function Bulk() {
         );
     };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, isUpdate: boolean = false) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         setSelectedFile(file);
-        uploadFile(file);
+        if (isUpdate) {
+            uploadFileForUpdate(file);
+        } else {
+            uploadFile(file);
+        }
+    };
+
+    const uploadFileForUpdate = (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setUploading(true);
+        setProgress(0);
+        setShowProgress(true);
+        setIsProcessing(false);
+
+        router.post('/sales/bulk/update', formData, {
+            preserveScroll: true,
+            preserveState: true,
+            onProgress: (event) => {
+                if (event.lengthComputable) {
+                    setProgress((event.loaded * 100) / event.total);
+                }
+            },
+            onSuccess: () => {
+                setUploading(false);
+                setProgress(100);
+                setIsProcessing(true);
+                setTimeout(() => {
+                    setShowProgress(false);
+                    setShowResults(true);
+                }, 1000);
+            },
+            onError: () => {
+                setUploading(false);
+                setProgress(0);
+                setShowProgress(false);
+            },
+            onFinish: () => {
+                setTimeout(() => {
+                    setProgress(0);
+                }, 2000);
+            },
+        });
     };
 
     const uploadFile = (file: File, onlySuccessful: boolean = false) => {
@@ -157,13 +200,13 @@ export default function Bulk() {
                     </Card>
 
                     {/* Sección de Carga */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Cargar Archivo</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-col gap-6">
-                                <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Cargar Archivo</CardTitle>
+                                </CardHeader>
+                                <CardContent>
                                     <p className="mb-4 text-sm text-muted-foreground">
                                         Carga el archivo Excel con las ventas. El archivo debe:
                                     </p>
@@ -172,11 +215,10 @@ export default function Bulk() {
                                         <li>Seguir el formato de la plantilla</li>
                                         <li>No exceder 10MB de tamaño</li>
                                     </ul>
-                                </div>
-
+                                </CardContent>
                                 <label
                                     htmlFor="file-upload"
-                                    className="flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+                                    className="flex flex-col items-center justify-center gap-4 p-8 m-4 border-2 border-dashed rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
                                 >
                                     <input
                                         type="file"
@@ -199,9 +241,51 @@ export default function Bulk() {
                                         </div>
                                     </div>
                                 </label>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </Card>
+                        </div>
+                        <div>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Actualización Masiva de Ventas</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="mb-4 text-sm text-muted-foreground">
+                                        Carga el archivo Excel con las ventas. El archivo debe:
+                                    </p>
+                                    <ul className="mb-4 list-disc pl-5 text-sm text-muted-foreground">
+                                        <li>Ser un archivo Excel (.xlsx)</li>
+                                        <li>Seguir el formato de la plantilla</li>
+                                        <li>No exceder 10MB de tamaño</li>
+                                    </ul>
+                                </CardContent>
+                                <label
+                                    htmlFor="file-upload"
+                                    className="flex flex-col items-center justify-center gap-4 p-8 m-4 border-2 border-dashed rounded-lg bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+                                >
+                                    <input
+                                        type="file"
+                                        accept=".xlsx"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                        id="file-upload"
+                                        disabled={uploading}
+                                    />
+                                    <div className="flex flex-col items-center justify-center gap-2 text-center">
+                                        <Upload className="h-6 w-6 text-muted-foreground" />
+                                        <div className="grid gap-1 text-center">
+                                            <p className="text-sm font-medium">
+                                                Haz clic para seleccionar
+                                                <span className="text-muted-foreground"> o arrastra y suelta</span>
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Excel (XLSX) hasta 10MB
+                                            </p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </Card>
+                        </div>
+                    </div>
 
                     {/* Modal de Resultados */}
                     <Dialog open={showResults} onOpenChange={setShowResults}>

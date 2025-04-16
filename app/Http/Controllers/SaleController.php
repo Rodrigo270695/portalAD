@@ -369,7 +369,7 @@ class SaleController extends Controller
         $sheet->setCellValue('A1', 'DNI PDV');
         $sheet->setCellValue('B1', 'Fecha');
         $sheet->setCellValue('C1', 'Teléfono');
-        $sheet->setCellValue('D1', 'Calidad Cluster');
+        $sheet->setCellValue('D1', 'Calidad de Cluster');
         $sheet->setCellValue('E1', 'Fecha Recarga');
         $sheet->setCellValue('F1', 'Monto Recarga');
         $sheet->setCellValue('G1', 'Monto Acumulado');
@@ -475,15 +475,21 @@ class SaleController extends Controller
             }
 
             $results = [
-                'total' => 0,
+                'total' => count($rows),
                 'success' => 0,
                 'errors' => [],
             ];
 
             DB::beginTransaction();
 
+            // Array para rastrear teléfonos por mes/año
+            $phoneTracker = [];
+            
+            // Preparar el array para inserción masiva
+            $salesData = [];
+            $chunkSize = 100; // Procesar en lotes de 100 registros
+
             foreach ($rows as $index => $row) {
-                $results['total']++;
                 $rowNumber = $index + 2;
 
                 try {
@@ -516,6 +522,29 @@ class SaleController extends Controller
                         throw new \Exception('El teléfono debe tener 9 dígitos, ser solo números y empezar con 9');
                     }
 
+                    // Validar teléfono duplicado en el mismo mes/año
+                    $monthYear = $dateObj->format('Y-m');
+                    
+                    // Verificar en la base de datos
+                    $existingPhone = Sale::where('telefono', $phone)
+                        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$monthYear])
+                        ->exists();
+
+                    // Verificar en los datos que se están procesando
+                    $phoneInCurrentBatch = isset($phoneTracker[$monthYear]) && 
+                        in_array($phone, $phoneTracker[$monthYear]);
+
+                    if ($existingPhone || $phoneInCurrentBatch) {
+                        throw new \Exception("El teléfono {$phone} ya existe en el mes de " . 
+                            $dateObj->format('F Y'));
+                    }
+
+                    // Agregar teléfono al tracker
+                    if (!isset($phoneTracker[$monthYear])) {
+                        $phoneTracker[$monthYear] = [];
+                    }
+                    $phoneTracker[$monthYear][] = $phone;
+
                     // Validar producto web
                     $webProduct = WebProduct::where('name', $webProductName)->first();
                     if (!$webProduct) {
@@ -543,8 +572,8 @@ class SaleController extends Controller
                         throw new \Exception('El monto acumulado debe ser un número');
                     }
 
-                    // Crear venta
-                    Sale::create([
+                    // Preparar datos para inserción masiva
+                    $salesData[] = [
                         'user_id' => $user->id,
                         'date' => $dateObj->format('Y-m-d'),
                         'telefono' => $phone,
@@ -554,10 +583,19 @@ class SaleController extends Controller
                         'accumulated_amount' => $accumulatedAmount,
                         'commissionable_charge' => (bool)$commissionableCharge,
                         'action' => !empty($row[8]) ? trim($row[8]) : null,
-                        'webproduct_id' => $webProduct->id, // Usar el ID del producto web encontrado
-                    ]);
+                        'webproduct_id' => $webProduct->id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
 
                     $results['success']++;
+
+                    // Insertar en lotes cuando alcanzamos el tamaño del chunk
+                    if (count($salesData) >= $chunkSize) {
+                        Sale::insert($salesData);
+                        $salesData = []; // Limpiar el array después de la inserción
+                    }
+
                 } catch (\Exception $e) {
                     $error = [
                         'row' => $rowNumber,
@@ -569,6 +607,11 @@ class SaleController extends Controller
                     }
                     $results['errors'][] = $error;
                 }
+            }
+
+            // Insertar los registros restantes
+            if (!empty($salesData)) {
+                Sale::insert($salesData);
             }
 
             if (empty($results['errors'])) {
@@ -605,6 +648,217 @@ class SaleController extends Controller
                         ]]
                     ]
                 ]);
+        }
+    }
+
+    /**
+     * Actualización masiva de ventas usando el teléfono y fecha como identificadores
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            $spreadsheet = $reader->load($file->getPathname());
+            $worksheet = $spreadsheet->getSheet(1); // Hoja de ventas
+            $rows = $worksheet->toArray();
+
+            // Remover encabezados
+            array_shift($rows);
+
+            $results = [
+                'total' => count($rows),
+                'success' => 0,
+                'not_found' => 0,
+                'errors' => [],
+            ];
+
+            DB::beginTransaction();
+
+            // Procesar en lotes para mejor rendimiento
+            $chunkSize = 100;
+            $updates = [];
+
+            foreach ($rows as $index => $row) {
+                $rowNumber = $index + 2;
+
+                try {
+                    // Extraer datos requeridos para la búsqueda
+                    $phone = trim($row[2]);
+                    $date = trim($row[1]);
+
+                    // Validaciones básicas
+                    if (!$phone || !$date) {
+                        throw new \Exception('Faltan campos requeridos (Teléfono o Fecha)');
+                    }
+
+                    // Validar teléfono
+                    if (!preg_match('/^9\d{8}$/', $phone)) {
+                        throw new \Exception('El teléfono debe tener 9 dígitos, ser solo números y empezar con 9');
+                    }
+
+                    // Validar y formatear fecha
+                    $dateObj = \DateTime::createFromFormat('Y-m-d', $date);
+                    if (!$dateObj) {
+                        throw new \Exception('Formato de fecha inválido, debe ser YYYY-MM-DD');
+                    }
+
+                    // Buscar la venta existente
+                    $monthYear = $dateObj->format('Y-m');
+                    $sale = Sale::where('telefono', $phone)
+                        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$monthYear])
+                        ->first();
+
+                    if (!$sale) {
+                        $results['not_found']++;
+                        throw new \Exception("No se encontró venta para el teléfono {$phone} en el mes de " . 
+                            $dateObj->format('F Y'));
+                    }
+
+                    // Preparar datos para actualización
+                    $updateData = [];
+
+                    // Actualizar DNI y usuario si se proporciona
+                    if (!empty($row[0])) {
+                        $dni = str_pad(trim($row[0]), 8, '0', STR_PAD_LEFT);
+                        $user = User::where('dni', $dni)->first();
+                        if (!$user) {
+                            throw new \Exception('DNI no encontrado en el sistema: ' . $dni);
+                        }
+                        $updateData['user_id'] = $user->id;
+                    }
+
+                    // Actualizar cluster_quality si se proporciona
+                    if (!empty($row[3])) {
+                        $updateData['cluster_quality'] = trim($row[3]);
+                    }
+
+                    // Actualizar fecha de recarga si se proporciona
+                    if (!empty($row[4])) {
+                        $rechargeDate = \DateTime::createFromFormat('Y-m-d', trim($row[4]));
+                        if (!$rechargeDate) {
+                            throw new \Exception('Formato de fecha de recarga inválido, debe ser YYYY-MM-DD');
+                        }
+                        $updateData['recharge_date'] = $rechargeDate->format('Y-m-d');
+                    }
+
+                    // Actualizar monto de recarga si se proporciona
+                    if (!empty($row[5])) {
+                        $rechargeAmount = trim($row[5]);
+                        if (!is_numeric($rechargeAmount)) {
+                            throw new \Exception('El monto de recarga debe ser un número');
+                        }
+                        $updateData['recharge_amount'] = $rechargeAmount;
+                    }
+
+                    // Actualizar monto acumulado si se proporciona
+                    if (!empty($row[6])) {
+                        $accumulatedAmount = trim($row[6]);
+                        if (!is_numeric($accumulatedAmount)) {
+                            throw new \Exception('El monto acumulado debe ser un número');
+                        }
+                        $updateData['accumulated_amount'] = $accumulatedAmount;
+                    }
+
+                    // Actualizar comisionable si se proporciona
+                    if (isset($row[7])) {
+                        $commissionableCharge = $row[7];
+                        if (!in_array($commissionableCharge, ['0', '1', 0, 1])) {
+                            throw new \Exception('El campo comisionable debe ser 0 o 1');
+                        }
+                        $updateData['commissionable_charge'] = (bool)$commissionableCharge;
+                    }
+
+                    // Actualizar acción si se proporciona
+                    if (!empty($row[8])) {
+                        $updateData['action'] = trim($row[8]);
+                    }
+
+                    // Actualizar producto web si se proporciona
+                    if (!empty($row[9])) {
+                        $webProductName = trim($row[9]);
+                        $webProduct = WebProduct::where('name', $webProductName)->first();
+                        if (!$webProduct) {
+                            throw new \Exception('Producto web no encontrado');
+                        }
+                        $updateData['webproduct_id'] = $webProduct->id;
+                    }
+
+                    if (!empty($updateData)) {
+                        $updateData['updated_at'] = now();
+                        $updates[] = [
+                            'id' => $sale->id,
+                            'data' => $updateData
+                        ];
+
+                        // Procesar actualizaciones en lotes
+                        if (count($updates) >= $chunkSize) {
+                            $this->processBatchUpdates($updates);
+                            $updates = [];
+                        }
+
+                        $results['success']++;
+                    }
+
+                } catch (\Exception $e) {
+                    $results['errors'][] = [
+                        'row' => $rowNumber,
+                        'message' => $e->getMessage()
+                    ];
+                }
+            }
+
+            // Procesar las actualizaciones restantes
+            if (!empty($updates)) {
+                $this->processBatchUpdates($updates);
+            }
+
+            if (empty($results['errors'])) {
+                DB::commit();
+                return redirect()->back()
+                    ->with([
+                        'success' => "Se actualizaron {$results['success']} ventas correctamente" . 
+                            ($results['not_found'] > 0 ? " ({$results['not_found']} no encontradas)" : ""),
+                        'results' => $results
+                    ]);
+            } else {
+                DB::rollBack();
+                return redirect()->back()
+                    ->with([
+                        'error' => 'Se encontraron errores en la actualización',
+                        'results' => $results
+                    ]);
+            }
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with([
+                    'error' => 'Error al procesar el archivo: ' . $e->getMessage(),
+                    'results' => [
+                        'total' => 0,
+                        'success' => 0,
+                        'not_found' => 0,
+                        'errors' => [[
+                            'row' => 0,
+                            'message' => $e->getMessage()
+                        ]]
+                    ]
+                ]);
+        }
+    }
+
+    /**
+     * Procesa las actualizaciones en lotes
+     */
+    private function processBatchUpdates($updates)
+    {
+        foreach ($updates as $update) {
+            Sale::where('id', $update['id'])->update($update['data']);
         }
     }
 }
