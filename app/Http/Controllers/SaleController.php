@@ -72,6 +72,7 @@ class SaleController extends Controller
         if ($zonificado = $request->zonificado) {
             $query->whereHas('user.zonificador', function($q) use ($zonificado) {
                 $q->where('name', 'like', "%{$zonificado}%")
+                    ->orWhere('dni', 'like', "%{$zonificado}%")
                     ->orWhereHas('circuit.zonal', function($q) use ($zonificado) {
                         $q->where('name', 'like', "%{$zonificado}%")
                             ->orWhere('short_name', 'like', "%{$zonificado}%");
@@ -282,6 +283,7 @@ class SaleController extends Controller
             if ($zonificado) {
                 $query->whereHas('user.zonificador', function($q) use ($zonificado) {
                     $q->where('name', 'like', "%{$zonificado}%")
+                        ->orWhere('dni', 'like', "%{$zonificado}%")
                         ->orWhereHas('circuit.zonal', function($q) use ($zonificado) {
                             $q->where('name', 'like', "%{$zonificado}%")
                                 ->orWhere('short_name', 'like', "%{$zonificado}%");
@@ -484,7 +486,7 @@ class SaleController extends Controller
 
             // Array para rastrear teléfonos por mes/año
             $phoneTracker = [];
-            
+
             // Preparar el array para inserción masiva
             $salesData = [];
             $chunkSize = 100; // Procesar en lotes de 100 registros
@@ -524,18 +526,18 @@ class SaleController extends Controller
 
                     // Validar teléfono duplicado en el mismo mes/año
                     $monthYear = $dateObj->format('Y-m');
-                    
+
                     // Verificar en la base de datos
                     $existingPhone = Sale::where('telefono', $phone)
                         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$monthYear])
                         ->exists();
 
                     // Verificar en los datos que se están procesando
-                    $phoneInCurrentBatch = isset($phoneTracker[$monthYear]) && 
+                    $phoneInCurrentBatch = isset($phoneTracker[$monthYear]) &&
                         in_array($phone, $phoneTracker[$monthYear]);
 
                     if ($existingPhone || $phoneInCurrentBatch) {
-                        throw new \Exception("El teléfono {$phone} ya existe en el mes de " . 
+                        throw new \Exception("El teléfono {$phone} ya existe en el mes de " .
                             $dateObj->format('F Y'));
                     }
 
@@ -715,7 +717,7 @@ class SaleController extends Controller
 
                     if (!$sale) {
                         $results['not_found']++;
-                        throw new \Exception("No se encontró venta para el teléfono {$phone} en el mes de " . 
+                        throw new \Exception("No se encontró venta para el teléfono {$phone} en el mes de " .
                             $dateObj->format('F Y'));
                     }
 
@@ -821,7 +823,7 @@ class SaleController extends Controller
                 DB::commit();
                 return redirect()->back()
                     ->with([
-                        'success' => "Se actualizaron {$results['success']} ventas correctamente" . 
+                        'success' => "Se actualizaron {$results['success']} ventas correctamente" .
                             ($results['not_found'] > 0 ? " ({$results['not_found']} no encontradas)" : ""),
                         'results' => $results
                     ]);
@@ -851,7 +853,6 @@ class SaleController extends Controller
                 ]);
         }
     }
-
     /**
      * Procesa las actualizaciones en lotes
      */

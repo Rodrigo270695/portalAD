@@ -60,6 +60,7 @@ class ShareController extends Controller
         if ($zonificado = $request->zonificado) {
             $query->whereHas('user.zonificador', function($q) use ($zonificado) {
                 $q->where('name', 'like', "%{$zonificado}%")
+                    ->orWhere('dni', 'like', "%{$zonificado}%")
                     ->orWhereHas('circuit.zonal', function($q) use ($zonificado) {
                         $q->where('name', 'like', "%{$zonificado}%")
                             ->orWhere('short_name', 'like', "%{$zonificado}%");

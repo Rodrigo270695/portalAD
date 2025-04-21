@@ -107,7 +107,7 @@ export default function Dashboard({ userData }: DashboardProps) {
                                     </div>
 
                                     <div className="bg-green-200 rounded-lg p-2 sm:p-3">
-                                        <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Ratio</div>
+                                        <div className="text-blue-700 font-medium text-sm sm:text-base mb-1">Porcentaje de Recarga</div>
                                         <div className="flex items-center">
                                             <PieChart className="text-blue-800 mr-2" size={isMobile ? 16 : 20} />
                                             <span className="text-blue-900 text-xl sm:text-2xl font-bold">{userData.salesData.ratio.toFixed(2)}%</span>

@@ -26,6 +26,10 @@ class DashboardController extends Controller
             $query->select('id', 'name', 'dni', 'cel');
         }, 'circuit'])->find($user->id);
 
+        $lastSale = Sale::orderBy('updated_at', 'desc')->first();
+        $lastSaleDate = $lastSale ? $lastSale->updated_at->format('d-m-Y') : null;
+
+
         // Obtener el mes y año actual
         $currentYear = now()->year;
         $currentMonth = now()->month;
@@ -49,7 +53,7 @@ class DashboardController extends Controller
                 ->where('year', $currentYear)
                 ->where('month', $currentMonth)
                 ->value('amount') ?? 0;
-            
+
             // Consulta base para ventas prepago del PDV
             $salesQuery = Sale::where('user_id', $user->id)
                 ->whereMonth('date', $currentMonth)
@@ -63,7 +67,7 @@ class DashboardController extends Controller
 
             // Contar total de ventas prepago
             $totalPrepagoSales = (clone $salesQuery)->count();
-            
+
             // Contar recargas comisionables
             $totalRecharges = (clone $salesQuery)
                 ->where('commissionable_charge', true)
@@ -108,7 +112,7 @@ class DashboardController extends Controller
 
             // Contar total de ventas prepago
             $totalPrepagoSales = (clone $salesQuery)->count();
-            
+
             // Contar recargas comisionables
             $totalRecharges = (clone $salesQuery)
                 ->where('commissionable_charge', true)
@@ -130,7 +134,7 @@ class DashboardController extends Controller
                     ->having('total', '>', 0)
                     ->orderBy('date', 'desc')
                     ->get();
-                
+
                 // Si no hay ventas, continuar con el siguiente PDV
                 if ($pdvSales->isEmpty()) {
                     continue;
@@ -150,7 +154,7 @@ class DashboardController extends Controller
         // Calcular métricas para el semáforo
         $remainingForQuota = max(0, $totalShare - $totalPrepagoSales);
         $quotaProgress = $totalShare > 0 ? ($totalPrepagoSales / $totalShare) * 100 : 0;
-        
+
         // Determinar color del semáforo para la cuota
         $quotaStatus = 'red';
         if ($quotaProgress >= 100) {
@@ -182,7 +186,7 @@ class DashboardController extends Controller
                 'vendorPhone' => $userData->zonificador?->cel ?? 'No asignado',
                 'channel' => 'PDV',
                 'group' => $userData->circuit?->name ?? 'No asignado',
-                'updateDate' => $userData->updated_at->format('d-m-Y'),
+                'updateDate' => $lastSaleDate,
                 'pdvLevel' => $userData->action ?? 'PDV REGULAR',
                 'totalShare' => $totalShare,
                 'pdvCount' => $pdvCount,

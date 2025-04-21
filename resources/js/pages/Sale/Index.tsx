@@ -6,8 +6,8 @@ import { Pagination } from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, Link } from '@inertiajs/react';
-import { Edit, Download, Trash2, Upload } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Edit, Download, Trash2, Upload, Loader2 } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
 import SaleModal, { type Sale as ModalSale } from './SaleModal';
 import { ModalSize } from '@/components/ui/crud-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -91,6 +91,8 @@ interface Props {
         page?: number;
         per_page?: number;
         date?: string;
+        startDate?: string;
+        endDate?: string;
         pdv?: string;
         zonificado?: string;
         product?: string;
@@ -134,6 +136,8 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
     const [selectedSale, setSelectedSale] = useState<ModalSale | undefined>(undefined);
     const [modalSize, setModalSize] = useState<ModalSize>('md');
     const [selectedSales, setSelectedSales] = useState<number[]>([]);
+    const [isExporting, setIsExporting] = useState(false);
+    const exportTimeoutRef = useRef<number | null>(null);
     const [selectAll, setSelectAll] = useState(false);
 
     const debouncedPdv = useDebounce(pdv, 300);
@@ -282,15 +286,103 @@ export default function Index({ sales, users, webProducts, filters, totals }: Pr
                                 Carga Masiva
                             </Link>
                         </Button>
-                        <Button 
+                        <Button
                             variant="outline"
                             className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700 hover:border-green-300"
                             onClick={() => {
-                                window.location.href = `/sales/export?startDate=${startDate}&endDate=${endDate}&pdv=${pdv}&zonificado=${zonificado}&product=${product}&webproduct=${webproduct}&commissionable=${commissionable}`;
+                                // Limpiar cualquier timeout anterior si existe
+                                if (exportTimeoutRef.current) {
+                                    clearTimeout(exportTimeoutRef.current);
+                                }
+
+                                setIsExporting(true);
+
+                                // Crear la URL de exportación
+                                const exportUrl = `/sales/export?startDate=${startDate}&endDate=${endDate}&pdv=${pdv}&zonificado=${zonificado}&product=${product}&webproduct=${webproduct}&commissionable=${commissionable}`;
+
+                                // Usar XMLHttpRequest para monitorear el progreso de la descarga
+                                const xhr = new XMLHttpRequest();
+                                xhr.open('GET', exportUrl, true);
+                                xhr.responseType = 'blob';
+
+                                // Configurar un timeout de seguridad (15 segundos)
+                                exportTimeoutRef.current = window.setTimeout(() => {
+                                    setIsExporting(false);
+                                    console.log('Timeout de seguridad activado para la exportación');
+                                }, 15000);
+
+                                xhr.onload = function() {
+                                    // Limpiar el timeout de seguridad
+                                    if (exportTimeoutRef.current) {
+                                        clearTimeout(exportTimeoutRef.current);
+                                        exportTimeoutRef.current = null;
+                                    }
+
+                                    if (this.status === 200) {
+                                        // Crear un objeto URL para el blob
+                                        const blob = new Blob([this.response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                                        const url = window.URL.createObjectURL(blob);
+
+                                        // Crear un enlace para la descarga
+                                        const a = document.createElement('a');
+                                        a.style.display = 'none';
+                                        a.href = url;
+                                        
+                                        a.download = `ventas_${startDate}_a_${endDate}.xlsx`;
+                                        document.body.appendChild(a);
+
+                                        // Descargar el archivo
+                                        a.click();
+
+                                        // Limpiar
+                                        window.URL.revokeObjectURL(url);
+                                        document.body.removeChild(a);
+
+                                        // Desactivar el estado de carga
+                                        setIsExporting(false);
+                                    } else {
+                                        console.error('Error al exportar:', this.status);
+                                        setIsExporting(false);
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error',
+                                            text: 'Hubo un problema al exportar los datos. Inténtalo de nuevo.',
+                                        });
+                                    }
+                                };
+
+                                xhr.onerror = function() {
+                                    // Limpiar el timeout de seguridad
+                                    if (exportTimeoutRef.current) {
+                                        clearTimeout(exportTimeoutRef.current);
+                                        exportTimeoutRef.current = null;
+                                    }
+
+                                    console.error('Error de red al exportar');
+                                    setIsExporting(false);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error de conexión',
+                                        text: 'No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.',
+                                    });
+                                };
+
+                                // Iniciar la solicitud
+                                xhr.send();
                             }}
+                            disabled={isExporting}
                         >
-                            <Download className="mr-2 h-4 w-4" />
-                            Exportar Excel
+                            {isExporting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Exportando...
+                                </>
+                            ) : (
+                                <>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Exportar Excel
+                                </>
+                            )}
                         </Button>
                     </div>
                 </div>
