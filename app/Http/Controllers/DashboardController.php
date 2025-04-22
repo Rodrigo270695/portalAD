@@ -26,8 +26,8 @@ class DashboardController extends Controller
             $query->select('id', 'name', 'dni', 'cel');
         }, 'circuit'])->find($user->id);
 
-        $lastSale = Sale::orderBy('updated_at', 'desc')->first();
-        $lastSaleDate = $lastSale ? $lastSale->updated_at->format('d-m-Y') : null;
+        $lastSale = Sale::orderBy('date', 'desc')->first();
+        $lastSaleDate = $lastSale ? $lastSale->date->format('d-m-Y') : null;
 
 
         // Obtener el mes y año actual
