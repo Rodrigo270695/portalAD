@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Event;
+use App\Services\ActivityLogService;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerPolicies();
+
         // Configurar el campo DNI como identificador de usuario para autenticación
         Auth::extend('dni-guard', function ($app, $name, array $config) {
             return new \Illuminate\Auth\SessionGuard(
@@ -49,6 +53,33 @@ class AuthServiceProvider extends ServiceProvider
         // Define la habilidad 'all-access' para permitir acceso a todos los roles autenticados
         Gate::define('all-access', function ($user) {
             return true; // Permite acceso a cualquier usuario autenticado
+        });
+
+        Event::listen('Illuminate\Auth\Events\Login', function ($event) {
+            app(ActivityLogService::class)->log(
+                'login',
+                'Usuario inició sesión',
+                ['login_type' => $event->guard]
+            );
+        });
+
+        Event::listen('Illuminate\Auth\Events\Logout', function ($event) {
+            app(ActivityLogService::class)->log(
+                'logout',
+                'Usuario cerró sesión',
+                ['guard' => $event->guard]
+            );
+        });
+
+        Event::listen('Illuminate\Auth\Events\Failed', function ($event) {
+            app(ActivityLogService::class)->log(
+                'login_failed',
+                'Intento fallido de inicio de sesión',
+                [
+                    'email' => $event->credentials['email'] ?? null,
+                    'guard' => $event->guard
+                ]
+            );
         });
     }
 }

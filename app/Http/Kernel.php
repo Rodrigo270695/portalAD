@@ -38,6 +38,9 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \App\Http\Middleware\CheckRouteAccess::class,
+            \App\Http\Middleware\LogUserActivity::class,
+            \App\Http\Middleware\LogUnauthorizedAccess::class,
+            \App\Http\Middleware\LogFileDownloads::class,
         ],
 
         'api' => [

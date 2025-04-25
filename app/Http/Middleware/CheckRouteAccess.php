@@ -31,6 +31,9 @@ class CheckRouteAccess
         'sales.bulk-destroy' => 'admin-qa',
         'webproducts.index' => 'admin-qa',
         'tacks.index' => 'admin-qa',
+        'activity-logs.index' => 'admin',
+        'activity-logs.user' => 'admin',
+        'activity-analytics.index' => 'admin',
     ];
 
     public function handle(Request $request, Closure $next)

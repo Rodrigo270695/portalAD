@@ -29,12 +29,12 @@ export function Pagination({ links, className = '' }: PaginationProps) {
   const cleanLabel = (label: string) => {
     // Si es un número o una elipsis simple, devuélvelo directamente
     if (!isNaN(Number(label)) || label === "...") return label;
-    
+
     // Para etiquetas con HTML como "&laquo; Previous" o "Next &raquo;"
     if (label.includes("&laquo;")) return "«";
     if (label.includes("&raquo;")) return "»";
     if (label.includes("...")) return "...";
-    
+
     return label;
   };
 

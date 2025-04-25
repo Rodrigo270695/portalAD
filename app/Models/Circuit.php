@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Tack;
 use App\Models\User;
 use App\Models\Zonal;
+use App\Traits\LogsActivity;
 
 class Circuit extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'name',
         'address',

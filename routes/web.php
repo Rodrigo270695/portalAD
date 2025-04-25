@@ -15,6 +15,8 @@ use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\HistoryCampaignController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ActivityAnalyticsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -60,6 +62,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('sales/upload', [SaleController::class, 'upload'])->name('sales.upload');
         Route::get('/products/{product}/webproducts', [WebproductController::class, 'index'])->name('webproducts.index');
         Route::get('/circuits/{circuit}/tacks', [TackController::class, 'index'])->name('tacks.index');
+        // Rutas para actividad
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+        Route::get('/activity-analytics', [ActivityAnalyticsController::class, 'index'])->name('activity-analytics.index');
+        Route::get('/activity-logs/user/{userId}', [ActivityLogController::class, 'userActivity'])->name('activity-logs.user');
     });
 
     // Rutas para admin y qa
@@ -97,6 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/webproducts/{webproduct}', [WebproductController::class, 'destroy'])->name('webproducts.destroy');
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::get('history-campaign', [HistoryCampaignController::class, 'index'])->name('history-campaign.index');
+
 
 });
 

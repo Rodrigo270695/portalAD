@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
 use App\Models\WebProduct;
+use App\Traits\LogsActivity;
 
 class Sale extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'date',
         'telefono',

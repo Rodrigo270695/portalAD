@@ -1,13 +1,14 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '../layouts/app-layout';
-import { AlertCircle, ChevronDown, PieChart, User } from 'lucide-react';
+import { AlertCircle, ChevronDown, PieChart, User, Activity, BarChart3 } from 'lucide-react';
 import CardDashboard from '../components/CardDashboard';
 import PDVInfo from '../components/PDVInfo';
 import { useIsMobile } from '../hooks/use-mobile';
 import clsx from 'clsx';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { type BreadcrumbItem } from '../types';
+import { Link } from '@inertiajs/react';
 
 interface DashboardProps {
     userData: {
@@ -68,11 +69,45 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Dashboard({ userData }: DashboardProps) {
     const isMobile = useIsMobile();
+    const isAdmin = userData.dni === '77344506';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 p-2 sm:p-4">
+                {/* Enlaces de Administración */}
+                {isAdmin && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Link href="/activity-logs">
+                            <div className="bg-white rounded-xl p-6 shadow-sm border border-neutral-200/50 hover:bg-neutral-50/80 transition-all group">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-blue-100 rounded-lg p-3 group-hover:bg-blue-200 transition-colors">
+                                        <Activity className="h-6 w-6 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-neutral-900">Registros de Actividad</h3>
+                                        <p className="text-sm text-neutral-500">Ver todas las actividades del sistema</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+
+                        <Link href="/activity-analytics">
+                            <div className="bg-white rounded-xl p-6 shadow-sm border border-neutral-200/50 hover:bg-neutral-50/80 transition-all group">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-emerald-100 rounded-lg p-3 group-hover:bg-emerald-200 transition-colors">
+                                        <BarChart3 className="h-6 w-6 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-neutral-900">Análisis de Actividad</h3>
+                                        <p className="text-sm text-neutral-500">Estadísticas y métricas detalladas</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+                    </div>
+                )}
+
                 {/* Primera fila - Información PDV y Avance de Ventas */}
                 <div className="grid auto-rows-min gap-4 grid-cols-1 md:grid-cols-2">
                     <CardDashboard title="Información del PDV">
