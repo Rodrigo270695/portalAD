@@ -17,6 +17,7 @@ class CheckRouteAccess
         'shares.index' => 'admin-qa',
         'sales.index' => 'admin-qa',
         'campaigns.index' => 'admin-qa',
+        'notifications.index' => 'admin-qa',
         'history.sales' => 'pdv-access',
         'payments.index' => 'pdv-access',
         'history-campaign.index' => 'all-access',
@@ -33,6 +34,7 @@ class CheckRouteAccess
         'tacks.index' => 'admin-qa',
         'activity-logs.index' => 'admin',
         'activity-logs.user' => 'admin',
+        'activity-logs.export' => 'admin',
         'activity-analytics.index' => 'admin',
     ];
 

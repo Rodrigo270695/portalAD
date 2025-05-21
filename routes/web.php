@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CircuitController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SaleHistoryController;
@@ -66,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
         Route::get('/activity-analytics', [ActivityAnalyticsController::class, 'index'])->name('activity-analytics.index');
         Route::get('/activity-logs/user/{userId}', [ActivityLogController::class, 'userActivity'])->name('activity-logs.user');
+        Route::get('/activity-logs/export', [ActivityLogController::class, 'export'])->name('activity-logs.export');
     });
 
     // Rutas para admin y qa
@@ -75,6 +77,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('sales/export', [SaleController::class, 'export'])->name('sales.export');
         Route::resource('sales', SaleController::class);
         Route::resource('campaigns', CampaignController::class);
+        Route::resource('notifications', NotificationController::class);
         Route::delete('shares/bulk-delete', [ShareController::class, 'bulkDestroy'])->name('shares.bulk-destroy');
         Route::get('shares/bulk', [ShareController::class, 'bulk'])->name('shares.bulk');
         Route::get('shares/bulk/template', [ShareController::class, 'downloadTemplate'])->name('shares.bulk.template');

@@ -72,6 +72,11 @@ const allNavItems: NavItem[] = [
                 icon: Dot,
             },
             {
+                title: 'Notificaciones',
+                href: '/notifications',
+                icon: Dot,
+            },
+            {
                 title: 'Cuota',
                 href: '/shares',
                 icon: Dot,

@@ -6,6 +6,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
+use App\Models\Notification;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -53,6 +54,9 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            'notifications' => $request->user()
+                ? Notification::getActiveNotifications()->toArray() ?? []
+                : [],
         ];
     }
 }

@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ActivityLogsExport;
 
 class ActivityLogController extends Controller
 {
@@ -43,6 +45,13 @@ class ActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
+        // Nuevo: Filtro por zonal
+        if ($request->filled('zonal_id')) {
+            $query->whereHas('user.circuit.zonal', function ($q) use ($request) {
+                $q->where('zonals.id', $request->zonal_id);
+            });
+        }
+
         // Obtener actividades paginadas
         $activities = $query
             ->orderBy('created_at', 'desc')
@@ -69,12 +78,15 @@ class ActivityLogController extends Controller
                 ];
             });
 
-        // Obtener lista de usuarios para el filtro (solo los que tienen actividades)
+        // Obtener lista de usuarios para el filtro
         $users = User::select('users.id', 'users.name', 'users.email')
             ->join('activity_logs', 'users.id', '=', 'activity_logs.user_id')
             ->distinct()
             ->orderBy('users.name')
             ->get();
+
+        // Nuevo: Obtener lista de zonales para el filtro
+        $zonales = Zonal::select('id', 'name')->orderBy('name')->get();
 
         // Obtener estadísticas filtradas
         $statsQuery = ActivityLog::query();
@@ -168,7 +180,8 @@ class ActivityLogController extends Controller
             'activities' => $activities,
             'stats' => $stats,
             'users' => $users,
-            'filters' => $request->only(['user_id', 'action', 'date_from', 'date_to'])
+            'zonales' => $zonales,
+            'filters' => $request->only(['user_id', 'action', 'date_from', 'date_to', 'zonal_id'])
         ]);
     }
 
@@ -231,5 +244,46 @@ class ActivityLogController extends Controller
             'activities' => $activities,
             'stats' => $stats
         ]);
+    }
+
+    // Método de exportación actualizado
+    public function export(Request $request)
+    {
+        $query = ActivityLog::query()
+            ->with([
+                'user' => function ($query) {
+                    $query->select('id', 'name', 'email', 'circuit_id')
+                        ->with(['circuit' => function ($query) {
+                            $query->select('id', 'name', 'zonal_id')
+                                ->with('zonal:id,name');
+                        }]);
+                }
+            ]);
+
+        // Aplicar los mismos filtros que en el index
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('zonal_id')) {
+            $query->whereHas('user.circuit.zonal', function ($q) use ($request) {
+                $q->where('zonals.id', $request->zonal_id);
+            });
+        }
+
+        $exporter = new ActivityLogsExport($query);
+        return $exporter->download();
     }
 }

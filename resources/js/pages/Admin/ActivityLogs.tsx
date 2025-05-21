@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '../../layouts/app-layout';
-import { Activity, BarChart3, Calendar, Clock, Laptop, Phone, PieChart, Tablet, Users, ChevronDown } from 'lucide-react';
+import { Activity, BarChart3, Calendar, Clock, Laptop, Phone, PieChart, Tablet, Users, ChevronDown, DownloadCloud } from 'lucide-react';
 import CardDashboard from '../../components/CardDashboard';
 import { useIsMobile } from '../../hooks/use-mobile';
 import clsx from 'clsx';
@@ -117,11 +117,16 @@ interface ActivityLogsProps {
         name: string;
         email: string;
     }>;
+    zonales: Array<{
+        id: number;
+        name: string;
+    }>;
     filters: {
         user_id?: number;
         action?: string;
         date_from?: string;
         date_to?: string;
+        zonal_id?: number;
     };
 }
 
@@ -201,7 +206,7 @@ interface ActivityLogData {
     };
 }
 
-export default function ActivityLogs({ activities, stats, users, filters }: ActivityLogsProps) {
+export default function ActivityLogs({ activities, stats, users, zonales, filters }: ActivityLogsProps) {
     const isMobile = useIsMobile();
     const [selectedDateRange, setSelectedDateRange] = useState('custom');
     const [dateRange, setDateRange] = useState({
@@ -343,6 +348,25 @@ export default function ActivityLogs({ activities, stats, users, filters }: Acti
         });
     }, [updateFilters]);
 
+    // Manejador para el cambio de zonal
+    const handleZonalChange = useCallback((zonalId: string) => {
+        updateFilters({
+            zonal_id: zonalId === 'all' ? undefined : parseInt(zonalId)
+        });
+    }, [updateFilters]);
+
+    // Manejador para la exportación a Excel
+    const handleExport = useCallback(() => {
+        const params = new URLSearchParams();
+        if (filters.user_id) params.append('user_id', filters.user_id.toString());
+        if (filters.action) params.append('action', filters.action);
+        if (filters.date_from) params.append('date_from', filters.date_from);
+        if (filters.date_to) params.append('date_to', filters.date_to);
+        if (filters.zonal_id) params.append('zonal_id', filters.zonal_id.toString());
+
+        window.location.href = `/activity-logs/export?${params.toString()}`;
+    }, [filters]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Registros de Actividad" />
@@ -398,6 +422,24 @@ export default function ActivityLogs({ activities, stats, users, filters }: Acti
                     </div>
 
                     <Select
+                        value={filters.zonal_id?.toString() || 'all'}
+                        onValueChange={handleZonalChange}
+                        disabled={isLoading}
+                    >
+                        <SelectTrigger className="w-full md:w-[200px]">
+                            <SelectValue placeholder="Filtrar por zonal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todas las zonales</SelectItem>
+                            {zonales.map((zonal) => (
+                                <SelectItem key={zonal.id} value={zonal.id.toString()}>
+                                    {zonal.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select
                         value={filters.user_id?.toString() || 'all'}
                         onValueChange={handleUserChange}
                         disabled={isLoading}
@@ -414,6 +456,16 @@ export default function ActivityLogs({ activities, stats, users, filters }: Acti
                             ))}
                         </SelectContent>
                     </Select>
+
+                    <Button
+                        variant="outline"
+                        onClick={handleExport}
+                        disabled={isLoading}
+                        className="w-full md:w-auto"
+                    >
+                        <DownloadCloud className="mr-2 h-4 w-4" />
+                        Exportar Excel
+                    </Button>
                 </div>
 
                 {/* Estado de carga */}
