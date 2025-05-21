@@ -12,32 +12,42 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, breadcrumbs = [], title }: AppLayoutProps) {
-    const { notifications } = usePage().props;
+    const { notifications = [] } = usePage().props as { notifications?: any[] };
     const [showNotifications, setShowNotifications] = useState(false);
+    const { url } = usePage();
 
     useEffect(() => {
-        if (!notifications || notifications.length === 0) return;
+        // No mostrar notificaciones en la página de gestión de notificaciones
+        if (url === '/notifications') return;
+
+        // Asegurarse de que notifications sea un array
+        const notificationsArray = Array.isArray(notifications) ? notifications : [];
+
+        if (notificationsArray.length === 0) return;
 
         // Obtener las notificaciones ya vistas del día
         const today = new Date().toISOString().split('T')[0];
         const viewedNotifications = JSON.parse(localStorage.getItem(`viewed_notifications_${today}`) || '[]');
 
         // Filtrar las notificaciones que no se han visto hoy
-        const unviewedNotifications = notifications.filter(
+        const unviewedNotifications = notificationsArray.filter(
             notification => !viewedNotifications.includes(notification.id)
         );
 
         if (unviewedNotifications.length > 0) {
             setShowNotifications(true);
             // Guardar las notificaciones actuales como vistas
-            const allNotificationIds = notifications.map(n => n.id);
+            const allNotificationIds = notificationsArray.map(n => n.id);
             localStorage.setItem(`viewed_notifications_${today}`, JSON.stringify(allNotificationIds));
         }
-    }, [notifications]);
+    }, [notifications, url]);
 
     const handleClose = () => {
         setShowNotifications(false);
     };
+
+    // Asegurarse de que notifications sea un array antes de pasarlo al modal
+    const safeNotifications = Array.isArray(notifications) ? notifications : [];
 
     return (
         <div className="min-h-screen bg-background">
@@ -49,7 +59,7 @@ export default function AppLayout({ children, breadcrumbs = [], title }: AppLayo
             <NotificationLoginModal
                 isOpen={showNotifications}
                 onClose={handleClose}
-                notifications={notifications || []}
+                notifications={safeNotifications}
             />
         </div>
     );

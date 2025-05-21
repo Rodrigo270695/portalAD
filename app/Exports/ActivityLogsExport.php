@@ -26,6 +26,7 @@ class ActivityLogsExport
                 // Establecer los encabezados
                 $headers = [
                     'Usuario',
+                    'DNI',
                     'Email',
                     'Zonal',
                     'Acción',
@@ -45,19 +46,20 @@ class ActivityLogsExport
                 $this->query->chunk(1000, function ($activities) use ($sheet, &$row) {
                     foreach ($activities as $activity) {
                         $sheet->setCellValue('A' . $row, $activity->user?->name ?? '-');
-                        $sheet->setCellValue('B' . $row, $activity->user?->email ?? '-');
-                        $sheet->setCellValue('C' . $row, $activity->user?->circuit?->zonal?->name ?? '-');
-                        $sheet->setCellValue('D' . $row, $activity->action);
-                        $sheet->setCellValue('E' . $row, $activity->device_type ?? '-');
-                        $sheet->setCellValue('F' . $row, $activity->ip_address);
-                        $sheet->setCellValue('G' . $row, $activity->created_at->format('d/m/Y H:i:s'));
-                        $sheet->setCellValue('H' . $row, $activity->additional_data['response_time'] ?? '-');
+                        $sheet->setCellValue('B' . $row, $activity->user?->dni ?? '-');
+                        $sheet->setCellValue('C' . $row, $activity->user?->email ?? '-');
+                        $sheet->setCellValue('D' . $row, $activity->user?->circuit?->zonal?->name ?? '-');
+                        $sheet->setCellValue('E' . $row, $activity->action);
+                        $sheet->setCellValue('F' . $row, $activity->device_type ?? '-');
+                        $sheet->setCellValue('G' . $row, $activity->ip_address);
+                        $sheet->setCellValue('H' . $row, $activity->created_at->format('d/m/Y H:i:s'));
+                        $sheet->setCellValue('I' . $row, $activity->additional_data['response_time'] ?? '-');
                         $row++;
                     }
                 });
 
                 // Auto-ajustar el ancho de las columnas
-                foreach (range('A', 'H') as $column) {
+                foreach (range('A', 'I') as $column) {
                     $sheet->getColumnDimension($column)->setAutoSize(true);
                 }
 

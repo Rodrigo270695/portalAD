@@ -252,7 +252,7 @@ class ActivityLogController extends Controller
         $query = ActivityLog::query()
             ->with([
                 'user' => function ($query) {
-                    $query->select('id', 'name', 'email', 'circuit_id')
+                    $query->select('id', 'name', 'email', 'dni', 'circuit_id')
                         ->with(['circuit' => function ($query) {
                             $query->select('id', 'name', 'zonal_id')
                                 ->with('zonal:id,name');
